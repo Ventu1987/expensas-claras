@@ -279,6 +279,7 @@ function sugerencia(r,C){
   const parts=[];
   if(x.B)parts.push('Incluye extraordinarias: '+(x.items.find(g=>g.tipo==='B')?.prov||'').trim()+'.');
   if(neg.length)parts.push(`Incluye créditos o ajustes por ${money(negT)}.`);
+  const pd=x.items.filter(g=>g.pend);if(pd.length)parts.push(`Incluye ${money(pd.reduce((s,g)=>s+num(g.imp),0))} sin explicar.`);
   if(p!==null){if(!p&&t)parts.push('Rubro nuevo este mes.');else if(p&&!t)parts.push('Sin gastos este mes.');else if(p){const v=t/p-1;if(Math.abs(v)<0.02)parts.push('Sin cambios relevantes.');else parts.push(`${v>0?'Aumento':'Baja'} de ${money(Math.abs(t-p))}: explicar el motivo (tarifa, contrato, consumo, facturas de más o de menos).`);}}
   if(!parts.length&&x.items.length===1)parts.push((x.items[0].prov||'').trim()+'.');
   return parts.join(' ');
@@ -297,6 +298,7 @@ function controles(b,C){
   if(has(c.egrOrd)||has(c.egrExt))add('info','Devengado vs pagado',`Ordinarios: devengado ${money(C.A)}, pagado ${money(C.egrO)}${C.egrO>C.A?' (se pagaron facturas de meses anteriores)':''}. Extraordinarios: devengado ${money(C.B)}, pagado ${money(C.egrE)}${C.B>C.egrE?`; queda una deuda de ${money(C.B-C.egrE)}`:''}.`);
   const neg=b.gastos.filter(g=>num(g.imp)<0);
   if(neg.length)add('warn','Créditos y ajustes',`${neg.length} ítem(s) por ${money(neg.reduce((s,g)=>s+num(g.imp),0))}. Verificar que se cobren o descuenten; si no, bajan la expensa sin entrar plata.`);
+  const pend=b.gastos.filter(g=>g.pend);if(pend.length)add('bad','Gastos sin explicar',`${pend.length} gasto(s) por ${money(pend.reduce((s,g)=>s+num(g.imp),0))} marcados como "falta explicar": ${pend.map(g=>esc((g.prov||'').split('—')[0].trim())).join('; ')}.`);
   const sinc=b.gastos.filter(g=>!g.comp||/sin comprobante|ajuste|^factura$/i.test(g.comp));
   add(sinc.length?'warn':'ok','Respaldo documental',sinc.length?`${sinc.length} gasto(s) sin número de comprobante: ${sinc.map(g=>esc((g.prov||'').split('—')[0].trim())).join('; ')}.`:'Todos los gastos tienen comprobante.');
   const deud=C.rows.filter(r=>r.neto>1);
@@ -428,7 +430,7 @@ function bindTips(){const tip=$('tip');document.querySelectorAll('[data-tip]').f
 function snapUfs(C){return C.rows.map(r=>({id:r.u.id,coef:r.p*100,saldo:num(r.u.saldo),pagos:num(r.u.pagos),deuda:r.cap,int:r.int,ord:r.ord+r.fr,ext:r.ex,part:r.part,total:r.total}));}
 function serieFull(b,C){
   const cur={periodo:b.cfg.periodo,cur:true,cobrosNoId:b.cfg.cobrosNoId||null,A:C.A,B:C.B,total:C.total,part:C.partT,cobranza:C.cobr,mora:C.mora,cajaOrd:C.finO,cajaExt:C.finE,cajaIniOrd:C.cajaO,cajaIniExt:C.cajaE,
-    rubros:Object.fromEntries(Object.entries(C.rub).map(([k,x])=>[k,x.A+x.B])),gastos:b.gastos.map(g=>({rubro:g.rubro,prov:g.prov,tipo:g.tipo,imp:num(g.imp)})),ufs:snapUfs(C)};
+    rubros:Object.fromEntries(Object.entries(C.rub).map(([k,x])=>[k,x.A+x.B])),gastos:b.gastos.map(g=>({rubro:g.rubro,prov:g.prov,tipo:g.tipo,imp:num(g.imp),pend:!!g.pend})),ufs:snapUfs(C)};
   return [...b.hist,cur];
 }
 const mlab=p=>{const l=perLabel(p).split(' ');return (l[0]||'').slice(0,3)+' '+(l[1]||'').slice(2);};
@@ -483,7 +485,7 @@ function vEstadisticas(b,C){
       return `<tr><td class="nw">${esc(r)}</td>${S.map((p,i)=>cell(p,S[i-1],r)).join('')}<td class="n"><b>${fmt(t)}</b></td><td class="n">${fmt(m)}</td><td class="n">${pct(t/(totA+totB||1))}</td></tr>`;}).join('')+
     `</tbody><tfoot><tr><td>Total</td>${S.map(p=>`<td class="n">${fmt(num(p.A)+num(p.B))}</td>`).join('')}<td class="n">${fmt(totA+totB)}</td><td class="n">${fmt(conG.length?conG.reduce((a,p)=>a+num(p.A)+num(p.B),0)/conG.length:0)}</td><td class="n">100,00%</td></tr></tfoot></table></div><p class="lead mt">* mes en curso. Debajo de cada monto, la variación contra el mes anterior.</p>`;
   // proveedores
-  const prov={};S.forEach(p=>(p.gastos||[]).forEach(g=>{const k=titleCase(provKey(g.prov));prov[k]=(prov[k]||0)+num(g.imp);}));
+  const prov={};S.forEach(p=>(p.gastos||[]).forEach(g=>{if(g.pend)return;const k=titleCase(provKey(g.prov));prov[k]=(prov[k]||0)+num(g.imp);}));
   const pv=Object.entries(prov).sort((a,c)=>c[1]-a[1]).slice(0,10),pmx=Math.max(...pv.map(x=>Math.abs(x[1])),1),ptot=Object.values(prov).reduce((a,c)=>a+c,0);
   const provHTML=`<div class="bars">${pv.map(([k,v])=>`<div class="br"><div>${esc(k)}</div><div class="track"><div class="fill ${v<0?'neg':''}" style="width:${Math.abs(v)/pmx*100}%"></div></div><div class="amt">${money(v)}</div><div class="pc">${pct(v/(ptot||1))}</div></div>`).join('')}</div>`;
   // deuda heatmap
@@ -510,17 +512,19 @@ function vEstadisticas(b,C){
   const lab={bad:'Revisar',warn:'Atención',ok:'OK',info:'Info'};
   const hc=[[rev.length?'bad':'ok','Continuidad de saldos',rev.length?`${rev.length} caso(s) en que el saldo anterior de una unidad no coincide con lo que debía pagar el mes previo, sin explicación por recargo. Ver la tabla de abajo.`:'El saldo anterior de cada unidad coincide con el total del mes previo.'],
     ['info','Recargos por pago fuera de término',recs.length?`${recs.length} caso(s) en que el saldo subió exactamente el ${nl(b.cfg.interes)}% de la expensa del mes previo (segundo vencimiento).`:'Sin casos.'],
+    ...(()=>{const bx=S.flatMap(p=>(p.gastos||[]).filter(g=>g.tipo==='B').map(g=>({p:p.periodo,g})));return bx.length?[['info','Extraordinarios del período',`${bx.length} gasto(s) por ${money(bx.reduce((a,x)=>a+num(x.g.imp),0))}: `+bx.map(x=>`${perLabel(x.p)} ${money(x.g.imp)} (${x.g.pend?'diferencia sin explicar':esc(titleCase(provKey(x.g.prov)))})`).join(' · ')+'.']]:[];})(),
     [coefCh.length?'warn':'ok','Cambios de coeficiente',coefCh.length?coefCh.slice(0,6).map(esc).join(' · ')+(coefCh.length>6?` · y ${coefCh.length-6} más`:''):'Sin cambios.'],
     [honCh.length?'info':'ok','Cambios de honorarios',honCh.length?honCh.join(' · '):'Sin cambios.'],
     [sinG.length?'warn':'ok','Meses sin gastos liquidados',sinG.length?sinG.join(', '):'Ninguno.'],
     [negCaja.length?'bad':'ok','Fondos negativos al cierre',negCaja.length?negCaja.join(' · '):'Ninguno.'],
+    ...(()=>{const pg=S.flatMap(p=>(p.gastos||[]).filter(g=>g.pend).map(g=>({p:p.periodo,g})));return pg.length?[['bad','Gastos sin explicar',`${pg.length} gasto(s) por ${money(pg.reduce((a,x)=>a+num(x.g.imp),0))}: `+pg.map(x=>`${perLabel(x.p)} ${money(x.g.imp)}`).join(' · ')+'.']]:[];})(),
     [lastL.length?'warn':'ok','Cobros no identificados',(lastL.length?`Pendientes: ${lastL.length} pago(s) sin asignar a ninguna unidad, por ${money(lastL.reduce((a,x)=>a+x.v,0))}: ${lastL.map(x=>money(x.v)+' ('+x.per+')').join(' · ')}.`:'Sin pendientes.')+(resC.length?` Se asignaron en meses posteriores ${resC.length} pago(s) por ${money(resC.reduce((a,x)=>a+x.v,0))}.`:'')]];
   const hcHTML=`<table><tbody>${hc.map(([st,t,r])=>`<tr><td style="width:96px"><span class="st ${st}">${lab[st]}</span></td><td style="width:220px"><b>${t}</b></td><td>${r}</td></tr>`).join('')}</tbody></table>`+
     (rev.length?`<h3 style="font-size:13.5px;margin:16px 0 8px">Saldos que no cierran entre un mes y otro</h3><div class="tw"><table><thead><tr><th>Liquidación</th><th>Unidad</th><th class="n">Total a pagar del mes previo</th><th class="n">Saldo anterior informado</th><th class="n">Diferencia</th></tr></thead><tbody>${rev.map(o=>`<tr><td class="nw">${perLabel(o.p)}</td><td class="nw">${esc(o.id)}</td><td class="n">${fmt(o.ant)}</td><td class="n">${fmt(o.sal)}</td><td class="n">${fmt(o.d)}</td></tr>`).join('')}</tbody></table></div><p class="lead mt">Una diferencia negativa suele ser un pago registrado entre liquidaciones; una positiva, un cargo agregado. Conviene pedir el detalle a la administración.</p>`:'');
   // detalle de un mes
   const mi=Math.min(window._sm??n-1,n-1),M=S[mi];
   const det=`<div class="row noprint" style="margin-bottom:10px"><select id="smPick" style="max-width:260px">${S.map((p,i)=>`<option value="${i}" ${i===mi?'selected':''}>${perLabel(p.periodo)}${p.cur?' (en curso)':''}</option>`).join('')}</select></div>`+
-    ((M.gastos||[]).length?`<div class="tw"><table><thead><tr><th>Rubro</th><th>Proveedor / concepto</th><th>Tipo</th><th class="n">Importe</th></tr></thead><tbody>${M.gastos.map(g=>`<tr><td class="nw">${esc(g.rubro)}</td><td style="font-size:12.5px">${esc(g.prov)}</td><td><span class="tag ${g.tipo==='B'?'b':''}">${g.tipo}</span></td><td class="n">${fmt(g.imp)}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="3">Total</td><td class="n">${fmt(M.gastos.reduce((a,g)=>a+num(g.imp),0))}</td></tr></tfoot></table></div>`:'<p class="muted">Ese mes no tiene gastos cargados.</p>');
+    ((M.gastos||[]).length?`<div class="tw"><table><thead><tr><th>Rubro</th><th>Proveedor / concepto</th><th>Tipo</th><th class="n">Importe</th></tr></thead><tbody>${M.gastos.map(g=>`<tr><td class="nw">${esc(g.rubro)}</td><td style="font-size:12.5px">${esc(g.prov)}</td><td class="nw"><span class="tag ${g.tipo==='B'?'b':''}">${g.tipo}</span>${g.pend?' <span class="st bad">Falta explicar</span>':''}</td><td class="n">${fmt(g.imp)}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="3">Total</td><td class="n">${fmt(M.gastos.reduce((a,g)=>a+num(g.imp),0))}</td></tr></tfoot></table></div>`:'<p class="muted">Ese mes no tiene gastos cargados.</p>');
   return help('estadisticas')+k+
    `<div class="two"><div class="card"><h2>Gasto mensual</h2><p class="lead">Ordinarios y extraordinarios por mes.</p>${chartEvol(b,C,S)}</div>
     <div class="card"><h2>Cuánto paga un lote tipo</h2><p class="lead">${tipo?esc(tipo.id)+', coeficiente '+nl(mode)+'%':'—'}: expensa del mes sin deudas ni intereses.</p>${lineChart(L,[{name:'Ordinarias',color:'var(--c1)',vals:loteVals.map(v=>v?v.o:null)},...(loteVals.some(v=>v&&v.e)?[{name:'Extraordinarias',color:'var(--c2)',vals:loteVals.map(v=>v?v.e:null)}]:[])],money)}</div></div>
@@ -544,9 +548,9 @@ function vGastos(b,C){
   const f=(window._gf||'').toLowerCase();
   const list=b.gastos.map((g,i)=>[g,i]).filter(([g])=>!f||(g.prov+' '+g.rubro+' '+g.comp).toLowerCase().includes(f));
   return help('gastos')+`<div class="card"><div class="card-h"><div><h2>Gastos del mes (devengados)</h2><p class="lead">Tipo A = ordinario · Tipo B = extraordinario · Negativo = crédito a favor del barrio.</p></div><input id="gFilter" class="noprint" placeholder="Buscar proveedor, rubro o comprobante" value="${esc(window._gf||'')}" style="max-width:280px"><button class="btn noprint" id="addG">${ic('plus')}Agregar gasto</button></div>
-  <div class="tw"><table><thead><tr><th style="width:130px">Fecha</th><th style="width:220px">Rubro</th><th>Proveedor / concepto</th><th style="width:170px">Comprobante</th><th style="width:70px">Tipo</th><th class="n" style="width:150px">Importe</th><th class="noprint"></th></tr></thead><tbody>`+
-  list.map(([g,i])=>`<tr><td><input type="date" data-g="${i}" data-f="fecha" value="${esc(g.fecha)}"></td><td><select data-g="${i}" data-f="rubro">${rubroList(b).map(r=>`<option ${r===g.rubro?'selected':''}>${esc(r)}</option>`).join('')}<option value="__new">+ Nuevo rubro…</option></select></td><td><input data-g="${i}" data-f="prov" value="${esc(g.prov)}"></td><td><input data-g="${i}" data-f="comp" value="${esc(g.comp)}"></td><td><select data-g="${i}" data-f="tipo"><option ${g.tipo!=='B'?'selected':''}>A</option><option ${g.tipo==='B'?'selected':''}>B</option></select></td><td>${mIn(`data-g="${i}" data-f="imp"`,g.imp)}</td><td class="noprint"><button class="x" data-delg="${i}" title="Quitar">×</button></td></tr>`).join('')+
-  `</tbody><tfoot><tr><td colspan="5">Ordinarios (A)</td><td class="n">${money(C.A)}</td><td class="noprint"></td></tr><tr><td colspan="5">Extraordinarios (B)</td><td class="n">${money(C.B)}</td><td class="noprint"></td></tr><tr><td colspan="5">Total del mes</td><td class="n">${money(C.A+C.B)}</td><td class="noprint"></td></tr></tfoot></table></div></div>`;
+  <div class="tw"><table><thead><tr><th style="width:130px">Fecha</th><th style="width:220px">Rubro</th><th>Proveedor / concepto</th><th style="width:170px">Comprobante</th><th style="width:70px">Tipo</th><th class="n" style="width:150px">Importe</th><th style="width:92px;text-align:center">Falta explicar</th><th class="noprint"></th></tr></thead><tbody>`+
+  list.map(([g,i])=>`<tr><td><input type="date" data-g="${i}" data-f="fecha" value="${esc(g.fecha)}"></td><td><select data-g="${i}" data-f="rubro">${rubroList(b).map(r=>`<option ${r===g.rubro?'selected':''}>${esc(r)}</option>`).join('')}<option value="__new">+ Nuevo rubro…</option></select></td><td><input data-g="${i}" data-f="prov" value="${esc(g.prov)}"></td><td><input data-g="${i}" data-f="comp" value="${esc(g.comp)}"></td><td><select data-g="${i}" data-f="tipo"><option ${g.tipo!=='B'?'selected':''}>A</option><option ${g.tipo==='B'?'selected':''}>B</option></select></td><td>${mIn(`data-g="${i}" data-f="imp"`,g.imp)}</td><td style="text-align:center"><input type="checkbox" data-g="${i}" data-f="pend" ${g.pend?'checked':''} style="width:auto" title="Marcar si este gasto no tiene explicación o respaldo"></td><td class="noprint"><button class="x" data-delg="${i}" title="Quitar">×</button></td></tr>`).join('')+
+  `</tbody><tfoot><tr><td colspan="5">Ordinarios (A)</td><td class="n">${money(C.A)}</td><td></td><td class="noprint"></td></tr><tr><td colspan="5">Extraordinarios (B)</td><td class="n">${money(C.B)}</td><td></td><td class="noprint"></td></tr><tr><td colspan="5">Total del mes</td><td class="n">${money(C.A+C.B)}</td><td></td><td class="noprint"></td></tr></tfoot></table></div></div>`;
 }
 function tablaRubros(b,C,editable){
   const pr=C.prev&&C.prev.rubros?C.prev.rubros:null,tg=C.A+C.B,P=b.cfg.periodo;
@@ -665,6 +669,7 @@ document.addEventListener('input',e=>{const t=e.target,b=B();if(!b)return;const 
   const isM=t.classList.contains('m'),pv=isM?parseIn(t.value):null;if(isM)t.classList.toggle('neg',/^\s*[−-]/.test(t.value));
   if(isM&&pv===null){t.style.borderColor='var(--bad)';return;}else if(isM)t.style.borderColor='';
   if(d.u!==undefined){b.ufs[+d.u][d.f]=isM?pv:t.value;touch();soft();}
+  else if(d.g!==undefined&&t.type==='checkbox'){b.gastos[+d.g][d.f]=t.checked;touch();soft();}
   else if(d.g!==undefined&&t.tagName!=='SELECT'){b.gastos[+d.g][d.f]=isM?(pv===''?0:pv):t.value;touch();soft();}
   else if(d.c!==undefined){b.cfg[d.c]=isM?pv:t.value;touch();soft();}
   else if(d.b!==undefined){b[d.b]=t.value;touch();soft();}
@@ -709,7 +714,7 @@ function closePeriod(){
   modal(`<h3>Cerrar ${perLabel(c.periodo)}</h3><p>Se guarda la liquidación en el historial y se arma el mes siguiente:</p><ul style="margin:0 0 10px 18px;padding:0;font-size:13px;line-height:1.7"><li>El total a pagar de cada unidad pasa a ser su saldo anterior (los intereses quedan separados).</li><li>Pagos, particulares y gastos quedan en cero.</li><li>Los fondos ordinario (${money(C.finO)}) y extraordinario (${money(C.finE)}) pasan como saldo inicial.</li></ul>${Object.keys(C.rub).some(r=>!b.obs[c.periodo+'|'+r])?'<p class="help" style="display:block">Hay rubros sin observación. Conviene completarlos antes de cerrar.</p>':''}<div class="row mt" style="justify-content:flex-end"><button class="btn ghost" id="cpNo">Cancelar</button><button class="btn" id="cpOk">Cerrar período</button></div>`);
   $('cpNo').onclick=closeModal;
   $('cpOk').onclick=()=>{const rub={};Object.entries(C.rub).forEach(([k,v])=>rub[k]=v.A+v.B);
-    b.hist.push({periodo:c.periodo,cobrosNoId:c.cobrosNoId||null,gastos:b.gastos.map(g=>({rubro:g.rubro,prov:g.prov,tipo:g.tipo,imp:num(g.imp)})),ufs:snapUfs(C),cajaIniOrd:C.cajaO,cajaIniExt:C.cajaE,A:C.A,B:C.B,fondo:C.fondo,part:C.partT,total:C.total,cobranza:C.cobr,mora:C.mora,cajaOrd:C.finO,cajaExt:C.finE,rubros:rub,obs:b.obs[c.periodo+'|__total']||''});
+    b.hist.push({periodo:c.periodo,cobrosNoId:c.cobrosNoId||null,gastos:b.gastos.map(g=>({rubro:g.rubro,prov:g.prov,tipo:g.tipo,imp:num(g.imp),pend:!!g.pend})),ufs:snapUfs(C),cajaIniOrd:C.cajaO,cajaIniExt:C.cajaE,A:C.A,B:C.B,fondo:C.fondo,part:C.partT,total:C.total,cobranza:C.cobr,mora:C.mora,cajaOrd:C.finO,cajaExt:C.finE,rubros:rub,obs:b.obs[c.periodo+'|__total']||''});
     C.rows.forEach(r=>{r.u.intPrev=Math.round(Math.max(Math.min(num(r.u.intPrev),r.neto),0)+r.int);r.u.saldo=Math.round(r.total);r.u.pagos=0;r.u.part=0;r.u.ref='';});
     c.cajaOrd=Math.round(C.finO*100)/100;c.cajaExt=Math.round(C.finE*100)/100;c.fondoacum=Math.round(C.fondoFin);
     Object.assign(c,{cobrExt:'',egrOrd:'',egrExt:'',saldoBanco:'',obsPeriodo:'',cobrosNoId:null});
