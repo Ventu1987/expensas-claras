@@ -106,7 +106,7 @@ body.dona .qi{display:inline-flex}
 .bcard .m div span{display:block;font-size:11.5px;color:var(--mute)}.bcard .m div b{font-variant-numeric:tabular-nums}
 .bcard.new svg{width:20px;height:20px}.bcard.new{display:grid;place-items:center;border-style:dashed;color:var(--acc);font-weight:600;min-height:170px}
 /* Bars */
-.bars .br{display:grid;grid-template-columns:minmax(150px,210px) 1fr 118px 64px;gap:12px;align-items:center;padding:6px 0;font-size:13px;border-bottom:1px dashed var(--line)}.bars .br:last-child{border-bottom:none}.bars .amt{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}.bars .pc{text-align:right;font-variant-numeric:tabular-nums;color:var(--mute);font-size:12px;white-space:nowrap}
+.bars .br{display:grid;grid-template-columns:minmax(150px,210px) 1fr 118px 64px;gap:12px;align-items:center;padding:6px 0;font-size:13px;border-bottom:1px dashed var(--line)}.bars .br:last-child{border-bottom:none}.bars.narrow .br{grid-template-columns:64px minmax(60px,1fr) 108px 54px}.bars .amt{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}.bars .pc{text-align:right;font-variant-numeric:tabular-nums;color:var(--mute);font-size:12px;white-space:nowrap}
 .bars .track{height:10px;background:var(--surface2);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
 .bars .fill{height:100%;background:var(--c1);border-radius:6px}.bars .fill.b{background:var(--c2)}.bars .fill.neg{background:var(--bad)}
 .two{display:grid;grid-template-columns:1.3fr 1fr;gap:18px}
@@ -218,6 +218,7 @@ const HELP={
  controles:'Son <b>alarmas automáticas</b>. No quieren decir que haya un error: avisan dónde conviene pedir el comprobante o una explicación.',
  cuenta:'Lo que tiene que pagar un lote este mes, y de dónde sale cada peso.',
  estadisticas:'Todos los meses juntos: cómo evolucionó cada gasto, cuánto pagó un lote, quién debe hace meses y qué cosas no cierran entre un mes y otro.',
+ extra:'Los <b>extraordinarios</b> son gastos fuera de lo común, como una obra. Acá se junta todo lo de la obra de cámaras: qué se cobró, a quién se le pagó, qué tiene factura y qué no, para poder reclamarlo.',
  historial:'Todos los meses ya cerrados, para ver cómo vienen los gastos. Cada mes puede llevar una explicación de qué pasó.',
  morosidad:'<b>Morosidad</b>: qué parte de lo que había que pagar no se pagó. Si es 30%, de cada 100 pesos que se debían, 30 no entraron.',
  fondo:'El <b>fondo de reserva</b> es un ahorro que se separa todos los meses para imprevistos (un portón roto, una bomba quemada), así no hay que pedir plata extra de golpe.',
@@ -323,13 +324,14 @@ const I={
  controles:'<path d="M9 12l2 2 4-4"/><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
  cuenta:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
  estadisticas:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+ extra:'<path d="M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.8 6.5 19.5l1-6.3L3 8.9 9 8z"/>',
  historial:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
  ajustes:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
  conexion:'<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
  plus:'<path d="M12 5v14M5 12h14"/>'
 };
 const ic=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${I[k]}</svg>`;
-const VIEWS=[['resumen','Resumen'],['unidades','Unidades'],['gastos','Gastos'],['liquidacion','Liquidación'],['caja','Caja y banco'],['controles','Controles'],['estadisticas','Estadísticas'],['cuenta','Estado de cuenta'],['historial','Historial'],['ajustes','Ajustes del barrio']];
+const VIEWS=[['resumen','Resumen'],['unidades','Unidades'],['gastos','Gastos'],['liquidacion','Liquidación'],['caja','Caja y banco'],['controles','Controles'],['estadisticas','Estadísticas'],['extra','Extraordinarias'],['cuenta','Estado de cuenta'],['historial','Historial'],['ajustes','Ajustes del barrio']];
 const GLOBAL=[['inicio','Mis barrios','home'],['conexion','Configuración','conexion']];
 
 /* ---------- Navegación ---------- */
@@ -352,7 +354,7 @@ function shell(){
 function render(){if(!B()&&!GLOBAL.some(x=>x[0]===D.view))D.view='inicio';shell();$('view').innerHTML=viewHTML(D.view);after(D.view);}
 function viewHTML(v){const b=B();switch(v){case'inicio':return vInicio();case'conexion':return vConexion();}
   if(!b)return vInicio();const C=calc(b);
-  return ({resumen:vResumen,estadisticas:vEstadisticas,unidades:vUnidades,gastos:vGastos,liquidacion:vLiquidacion,caja:vCaja,controles:vControles,cuenta:vCuenta,historial:vHistorial,ajustes:vAjustes}[v]||vResumen)(b,C);}
+  return ({resumen:vResumen,estadisticas:vEstadisticas,extra:vExtra,unidades:vUnidades,gastos:vGastos,liquidacion:vLiquidacion,caja:vCaja,controles:vControles,cuenta:vCuenta,historial:vHistorial,ajustes:vAjustes}[v]||vResumen)(b,C);}
 
 /* ---------- Vistas ---------- */
 function vInicio(){
@@ -458,7 +460,8 @@ function barChart(labels,vals,fmtV,color,opt={}){
     g+=`<rect class="hit" x="${pl+step*i}" y="${pt-12}" width="${step}" height="${ih+12}" data-tip="${esc('<b>'+perLabel(l)+'</b><br>'+(opt.name||'')+': '+(vals[i]==null?'—':fmtV(v)))}"/>`;});
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg></div>`;
 }
-function provKey(p){const n=(p||'').split(/ \(| - | — /)[0].trim();return n.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\b(DE TRABAJO|LIMITADA|LTDA|S\.?A\.?U?|SRL|S A U|SA)\b/g,'').replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim()||'SIN PROVEEDOR';}
+function provKey(p){const k=provKey0(p),al=(B()&&B().alias)||{};return al[k]||k;}
+function provKey0(p){const n=(p||'').split(/ \(| - | — /)[0].trim();return n.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\b(DE TRABAJO|LIMITADA|LTDA|S\.?A\.?U?|SRL|S A U|SA)\b/g,'').replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim()||'SIN PROVEEDOR';}
 const titleCase=t=>t.toLowerCase().replace(/(^|\s)(\S)/g,(m,a,c)=>a+c.toUpperCase()).replace(/\b(De|Del|La|Las|Los|Y|E)\b/g,w=>w.toLowerCase()).replace(/^./,c=>c.toUpperCase());
 function vEstadisticas(b,C){
   const S=serieFull(b,C),L=S.map(p=>p.periodo),n=S.length;
@@ -524,7 +527,7 @@ function vEstadisticas(b,C){
   // detalle de un mes
   const mi=Math.min(window._sm??n-1,n-1),M=S[mi];
   const det=`<div class="row noprint" style="margin-bottom:10px"><select id="smPick" style="max-width:260px">${S.map((p,i)=>`<option value="${i}" ${i===mi?'selected':''}>${perLabel(p.periodo)}${p.cur?' (en curso)':''}</option>`).join('')}</select></div>`+
-    ((M.gastos||[]).length?`<div class="tw"><table><thead><tr><th>Rubro</th><th>Proveedor / concepto</th><th>Tipo</th><th class="n">Importe</th></tr></thead><tbody>${M.gastos.map(g=>`<tr><td class="nw">${esc(g.rubro)}</td><td style="font-size:12.5px">${esc(g.prov)}</td><td class="nw"><span class="tag ${g.tipo==='B'?'b':''}">${g.tipo}</span>${g.pend?' <span class="st bad">Falta explicar</span>':''}</td><td class="n">${fmt(g.imp)}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="3">Total</td><td class="n">${fmt(M.gastos.reduce((a,g)=>a+num(g.imp),0))}</td></tr></tfoot></table></div>`:'<p class="muted">Ese mes no tiene gastos cargados.</p>');
+    ((M.gastos||[]).length?`<div class="tw"><table><thead><tr><th>Rubro</th><th>Proveedor / concepto</th><th>Tipo</th><th class="n">Importe</th></tr></thead><tbody>${M.gastos.map(g=>`<tr><td class="nw">${esc(g.rubro)}</td><td style="font-size:12.5px">${esc(g.prov)}</td><td class="nw"><span class="tag ${g.tipo==='B'?'b':''}">${g.tipo==='P'?'Particular':g.tipo}</span>${g.reclas?' <span class="st warn">Reclasificado</span>':''}${g.pend?' <span class="st bad">Falta explicar</span>':''}</td><td class="n">${fmt(g.imp)}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="3">Total</td><td class="n">${fmt(M.gastos.reduce((a,g)=>a+num(g.imp),0))}</td></tr></tfoot></table></div>`:'<p class="muted">Ese mes no tiene gastos cargados.</p>');
   return help('estadisticas')+k+
    `<div class="two"><div class="card"><h2>Gasto mensual</h2><p class="lead">Ordinarios y extraordinarios por mes.</p>${chartEvol(b,C,S)}</div>
     <div class="card"><h2>Cuánto paga un lote tipo</h2><p class="lead">${tipo?esc(tipo.id)+', coeficiente '+nl(mode)+'%':'—'}: expensa del mes sin deudas ni intereses.</p>${lineChart(L,[{name:'Ordinarias',color:'var(--c1)',vals:loteVals.map(v=>v?v.o:null)},...(loteVals.some(v=>v&&v.e)?[{name:'Extraordinarias',color:'var(--c2)',vals:loteVals.map(v=>v?v.e:null)}]:[])],money)}</div></div>
@@ -535,6 +538,57 @@ function vEstadisticas(b,C){
    <div class="card"><h2>Principales proveedores</h2><p class="lead">Lo pagado a cada proveedor en todo el período (10 mayores).</p>${provHTML}</div>
    <div class="card"><h2>Deuda por unidad, mes a mes</h2><p class="lead">Solo unidades que tuvieron deuda en algún mes.</p>${heat}</div>
    <div class="card"><h2>Detalle de gastos de un mes</h2><p class="lead">Elegí el mes para ver cada factura.</p>${det}</div>`;
+}
+/* ---------- Extraordinarias ---------- */
+const isCam=t=>/c[aá]mara|cctv|monitoreo|fibra|seguridad electr|obra civil|columna/i.test(t||'')&&!/cubierta/i.test(t||'');
+function vExtra(b,C){
+  const S=serieFull(b,C),c=b.cfg;
+  const adm=p=>p.admin||(p.cur?(b.admin||''):'');
+  // mes a mes
+  const rows=S.map(p=>{const ext=(p.ufs||[]).reduce((a,u)=>a+num(u.ext),0),gB=(p.gastos||[]).filter(g=>g.tipo==='B'),rec=gB.filter(g=>g.reclas||g.pend).reduce((a,g)=>a+num(g.imp),0);
+    return {p,ext,orig:Math.max(ext-rec,0),rec,gast:gB.reduce((a,g)=>a+num(g.imp),0),fondo:p.cajaExt};});
+  const totExt=rows.reduce((a,r)=>a+r.orig,0),totRec=rows.reduce((a,r)=>a+r.rec,0),totG=rows.reduce((a,r)=>a+r.gast,0);
+  // cronología cámaras
+  const crono=[];S.forEach(p=>(p.gastos||[]).forEach(g=>{if(isCam(g.prov)||(g.tipo==='B'&&!g.pend))crono.push({fact:true,per:p.periodo,adm:adm(p),prov:titleCase(provKey(g.prov)),con:g.prov,comp:g.comp||'',imp:num(g.imp),como:g.tipo==='B'?(g.reclas?'Ordinario (reclasificado a extraordinario)':'Extraordinario'):'Ordinario',cam:isCam(g.prov)?'Sí':'?'});}));
+  const pf=b.pagosFuera||[];
+  pf.filter(x=>x.cam!=='No').forEach(x=>crono.push({fact:false,per:x.periodo,adm:'',prov:x.concepto,con:x.nota||'',comp:'—',imp:num(x.imp),como:'Pagado por fuera de la liquidación (fondo '+x.fondo.toLowerCase()+')',cam:x.cam}));
+  crono.sort((a,c2)=>a.per.localeCompare(c2.per));
+  const camSi=crono.filter(x=>x.fact),camOtro=crono.filter(x=>!x.fact);
+  const sum=a=>a.reduce((s,x)=>s+x.imp,0);
+  const sinExp=S.flatMap(p=>(p.gastos||[]).filter(g=>g.pend).map(g=>({per:p.periodo,imp:num(g.imp),con:g.prov})));
+  // por lote
+  const ids=b.ufs.map(u=>u.id);const perLote=ids.map(id=>({id,v:S.reduce((a,p)=>{const u=(p.ufs||[]).find(x=>x.id===id);return a+(u?num(u.ext):0);},0)}));
+  const kp=`<div class="kpis">`+kpi('Cobrado como extraordinario',money(totExt),'lo que se liquidó a los propietarios como extraordinario')+
+    kpi('Inversión cobrada como ordinaria',money(totRec),'reclasificado o sin explicar','B',totRec>0)+
+    kpi('Obra de cámaras: gastos con factura',money(sum(camSi)),`${camSi.length} ítems identificados`)+
+    kpi('Pagos a confirmar',money(sum(camOtro)),`${camOtro.length} ítems sin comprobante o sin detalle`,null,camOtro.length>0)+
+    kpi('Fondo extraordinario hoy',money(C.finE),C.finE<-1?'negativo: se usó plata ordinaria':'','caja',C.finE<-1)+`</div>`;
+  const mes=`<div class="tw"><table><thead><tr><th>Período</th><th>Administración</th><th class="n">Cobrado como extraordinario</th><th class="n">Inversión cobrada como ordinaria</th><th class="n">Gastos extraordinarios liquidados</th><th class="n">Fondo extraordinario al cierre</th><th style="min-width:240px">Qué pasó</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr class="${r.p.cur?'cur':''}"><td class="nw">${perLabel(r.p.periodo)}${r.p.cur?' <span class="tag">en curso</span>':''}</td><td class="nw" style="font-size:12px">${esc(adm(r.p))}</td><td class="n">${fmt(r.orig)}</td><td class="n">${r.rec?fmt(r.rec):'<span class="muted">0</span>'}</td><td class="n">${fmt(r.gast)}</td><td class="n">${r.fondo==null?'<span class="muted" title="La administración anterior no separaba fondos">—</span>':fmt(r.fondo)}</td><td style="font-size:12px">${esc(r.p.cur?(b.obs[c.periodo+'|__total']||''):(r.p.obs||''))}</td></tr>`).join('')+
+    `</tbody><tfoot><tr><td colspan="2">Total</td><td class="n">${fmt(totExt)}</td><td class="n">${fmt(totRec)}</td><td class="n">${fmt(totG)}</td><td></td><td></td></tr></tfoot></table></div><p class="lead mt">Hasta abril la administración anterior manejaba una sola cuenta, sin separar el fondo extraordinario.</p>`;
+  const tCrono=`<div class="tw"><table><thead><tr><th>Período</th><th>Proveedor</th><th style="min-width:280px">Concepto / observación</th><th>Comprobante</th><th>Cómo se cobró o pagó</th><th>¿Es de la obra?</th><th class="n">Importe</th></tr></thead><tbody>`+
+    crono.map(x=>`<tr><td class="nw">${perLabel(x.per)}</td><td style="font-size:12.5px">${esc(x.prov)}</td><td style="font-size:12px">${esc(x.con)}</td><td class="nw" style="font-size:12px">${esc(x.comp)}</td><td style="font-size:12px">${esc(x.como)}</td><td><span class="st ${x.cam==='Sí'?'info':x.cam==='?'?'bad':'warn'}">${esc(x.cam)}</span></td><td class="n">${fmt(x.imp)}</td></tr>`).join('')+
+    `</tbody><tfoot><tr><td colspan="6">Con factura en las liquidaciones</td><td class="n">${fmt(sum(camSi))}</td></tr><tr><td colspan="6">Pagados por fuera de la liquidación, a confirmar</td><td class="n">${fmt(sum(camOtro))}</td></tr><tr><td colspan="6">Total a pedir explicación</td><td class="n">${fmt(sum(crono))}</td></tr></tfoot></table></div>`;
+  const tPf=pf.length?`<div class="tw"><table><thead><tr><th>Período</th><th>Concepto en la liquidación</th><th>Fondo</th><th>¿Es de la obra?</th><th style="min-width:280px">Observación</th><th class="n">Importe</th></tr></thead><tbody>${pf.map(x=>`<tr><td class="nw">${perLabel(x.periodo)}</td><td>${esc(x.concepto)}</td><td>${esc(x.fondo)}</td><td><span class="st ${x.cam==='Sí'?'info':x.cam==='No'?'ok':x.cam==='?'?'bad':'warn'}">${esc(x.cam)}</span></td><td style="font-size:12px">${esc(x.nota)}</td><td class="n">${fmt(x.imp)}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="5">Total pagado por fuera de la liquidación</td><td class="n">${fmt(pf.reduce((a,x)=>a+num(x.imp),0))}</td></tr></tfoot></table></div><p class="lead mt">Son egresos que figuran en "Detalle de egresos e ingresos" pero no en la lista de gastos del mes: los propietarios nunca los vieron prorrateados.</p>`:'<p class="muted">No hay pagos por fuera de la liquidación cargados.</p>';
+  const lmx=Math.max(1,...perLote.map(x=>x.v));
+  const tLote=`<div class="bars narrow">${perLote.map(x=>`<div class="br"><div>${esc(x.id)}</div><div class="track"><div class="fill b" style="width:${x.v/lmx*100}%"></div></div><div class="amt">${money(x.v)}</div><div class="pc">${pct(x.v/(perLote.reduce((a,y)=>a+y.v,0)||1))}</div></div>`).join('')}</div><p class="lead mt">Incluye lo reclasificado como extraordinario. Total: ${money(perLote.reduce((a,y)=>a+y.v,0))}.</p>`;
+  const prv={};camSi.forEach(x=>prv[x.prov]=(prv[x.prov]||0)+x.imp);
+  const pfT=pf.reduce((a,x)=>a+num(x.imp),0),recIt=S.flatMap(p=>(p.gastos||[]).filter(g=>g.reclas).map(g=>({per:p.periodo,g})));
+  const preg=[
+    `¿Cuál fue el presupuesto total aprobado para la obra, quién lo aprobó y en qué asamblea? Con factura hay identificados ${money(sum(camSi))}${camOtro.length?`, y otros ${money(sum(camOtro))} figuran sin comprobante o sin detalle`:''}.`,
+    ...(recIt.length?[`¿Por qué se cobraron como ordinarios gastos de inversión? ${recIt.map(x=>`${titleCase(provKey(x.g.prov))} ${money(x.g.imp)} (${perLabel(x.per)})`).join('; ')}.`]:[]),
+    ...sinExp.map(x=>`${perLabel(x.per)}: ${x.con}. ¿A qué corresponden esos ${money(x.imp)}?`),
+    ...(pf.length?[`Se pagaron ${money(pfT)} por fuera de la liquidación, sin prorratearlos como gasto. Pedir facturas y órdenes de pago de cada uno.`]:[]),
+    ...(C.finE<-1?[`El fondo extraordinario está en ${money(C.finE)}: ¿con qué plata se cubrió la diferencia y quién lo autorizó?`]:[]),
+    ...((b.preguntasExtra)||[])];
+  return help('extra')+kp+
+   `<div class="card"><div class="card-h"><div><h2>Obra de cámaras: cronología para el reclamo</h2><p class="lead">Todo lo vinculado a la obra, mes a mes: lo que tiene factura, lo que se cobró como ordinario y lo que se pagó por fuera de la liquidación.</p></div><button class="btn noprint" id="pdfExtra">PDF del informe</button></div>${tCrono}</div>
+   <div class="two"><div class="card"><h2>Proveedores de la obra</h2><p class="lead">Solo ítems con factura vinculados a la obra.</p><div class="bars">${Object.entries(prv).sort((a,c2)=>c2[1]-a[1]).map(([k,v])=>`<div class="br"><div>${esc(k)}</div><div class="track"><div class="fill b" style="width:${v/Math.max(...Object.values(prv))*100}%"></div></div><div class="amt">${money(v)}</div><div class="pc">${pct(v/sum(camSi))}</div></div>`).join('')}</div></div>
+    <div class="card"><h2>Cuánto pagó cada lote</h2><p class="lead">Extraordinarios liquidados a cada unidad, todos los meses.</p>${tLote}</div></div>
+   <div class="card"><h2>Extraordinarios mes a mes</h2><p class="lead">Cuánto se cobró, cuánto se gastó y cómo quedó el fondo.</p>${mes}</div>
+   <div class="card"><h2>Pagos por fuera de la liquidación</h2><p class="lead">Egresos del banco que no se prorratearon como gasto.</p>${tPf}</div>
+   ${sinExp.length?`<div class="card"><h2>Montos sin explicar</h2><table><tbody>${sinExp.map(x=>`<tr><td class="nw">${perLabel(x.per)}</td><td>${esc(x.con)}</td><td class="n">${fmt(x.imp)}</td></tr>`).join('')}</tbody></table></div>`:''}
+   <div class="card"><h2>Preguntas para el reclamo</h2><p class="lead">Armadas con los datos de las liquidaciones. Conviene enviarlas por escrito y pedir respuesta con documentación.</p><ol style="margin:0;padding-left:20px;line-height:1.7;font-size:13.5px">${preg.map(q=>`<li>${q}</li>`).join('')}</ol><div class="row mt noprint"><button class="btn ghost" id="copyPreg">Copiar preguntas</button></div></div>`;
 }
 function vUnidades(b,C){
   const sum=f=>b.ufs.reduce((s,u)=>s+num(u[f]),0);
@@ -637,6 +691,8 @@ function after(v){
   on('closeP',closePeriod);
   on('copyRec',()=>copy(reciboTxt(b,window._uf||0),'Estado de cuenta copiado'));
   on('pdfAll',()=>printAll('cuentas'));
+  on('pdfExtra',()=>{$('phSec').textContent='Informe de extraordinarias';printNow();});
+  on('copyPreg',()=>copy([...document.querySelectorAll('#view ol li')].map((li,i)=>(i+1)+'. '+li.textContent).join('\n'),'Preguntas copiadas'));
   const sp=$('smPick');if(sp)sp.onchange=()=>{window._sm=+sp.value;render();};
   const up=$('ufPick');if(up)up.onchange=()=>{window._uf=+up.value;render();};
   const gf=$('gFilter');if(gf)gf.oninput=()=>{window._gf=gf.value;soft();};
