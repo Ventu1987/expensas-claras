@@ -4,6 +4,8 @@ App web para liquidar y controlar expensas de barrios cerrados chicos. Es un sol
 
 ## Qué hace
 
+- Rubros propios por barrio ("+ Nuevo rubro…" al cargar un gasto).
+- Resumen con composición del gasto, evolución mensual, indicadores clave y deuda por unidad.
 - Varios barrios, cada uno con sus secciones: Resumen, Unidades, Gastos, Liquidación, Caja y banco, Controles, Estado de cuenta, Historial y Ajustes.
 - Prorrateo por coeficiente, fondo de reserva, interés por mora solo sobre el capital adeudado (sin interés sobre interés) y gastos particulares.
 - Fondos ordinario y extraordinario separados, con conciliación contra el extracto bancario.
@@ -58,4 +60,4 @@ La clave protege la planilla: sin ella, la app web no lee ni escribe nada.
 
 - Sin conexión a la planilla, los datos quedan solo en el navegador. Usá "Copiar todo", en Configuración, como respaldo manual.
 - La vista previa de la app dentro de Claude no permite imprimir ni conectarse con Google. Las dos cosas funcionan en la versión publicada en GitHub Pages.
-- Si cambiás `Code.gs`, hacé **Implementar > Gestionar implementaciones > Editar > Nueva versión** para que la URL siga funcionando con el código nuevo.
+- Si cambiás `Code.gs`: pegá el código nuevo, ejecutá otra vez `setup` (agrega columnas nuevas sin borrar datos) y hacé **Implementar > Gestionar implementaciones > Editar > Nueva versión**. La URL sigue siendo la misma.

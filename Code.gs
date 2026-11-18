@@ -18,7 +18,7 @@ const TOKEN = 'CAMBIAR-ESTA-CLAVE';
 const SHEETS = {
   Barrios: ['id', 'nombre', 'zona', 'administracion', 'cuit', 'periodo', 'vencimiento', 'fondo_reserva_pct', 'interes_pct',
             'caja_ord_inicial', 'caja_ext_inicial', 'fondo_reserva_acum', 'cobranza_ext', 'egresos_ord', 'egresos_ext',
-            'saldo_banco', 'observaciones_periodo', 'actualizado'],
+            'saldo_banco', 'observaciones_periodo', 'actualizado', 'rubros_propios'],
   Unidades: ['barrio_id', 'orden', 'unidad', 'propietario', 'coeficiente', 'saldo_anterior', 'intereses_en_saldo',
              'pagos', 'particulares', 'total_segun_admin'],
   Gastos: ['barrio_id', 'periodo', 'orden', 'fecha', 'rubro', 'proveedor_concepto', 'comprobante', 'tipo', 'importe'],
@@ -76,7 +76,7 @@ function saveBarrio(b) {
   removeBarrio(b.id);
   const c = b.cfg || {};
   append('Barrios', [[b.id, b.nombre, b.zona || '', b.admin || '', c.cuit || '', c.periodo || '', c.venc || '', c.fondo, c.interes,
-    c.cajaOrd, c.cajaExt, c.fondoacum, c.cobrExt, c.egrOrd, c.egrExt, c.saldoBanco, c.obsPeriodo || '', b.updated || new Date().toISOString()]]);
+    c.cajaOrd, c.cajaExt, c.fondoacum, c.cobrExt, c.egrOrd, c.egrExt, c.saldoBanco, c.obsPeriodo || '', b.updated || new Date().toISOString(), JSON.stringify(b.rubros || [])]]);
   append('Unidades', (b.ufs || []).map((u, i) => [b.id, i + 1, u.id, u.prop || '', u.coef, u.saldo, u.intPrev, u.pagos, u.part, u.ref]));
   append('Gastos', (b.gastos || []).map((g, i) => [b.id, c.periodo || '', i + 1, g.fecha || '', g.rubro || '', g.prov || '', g.comp || '', g.tipo || 'A', g.imp]));
   append('Historial', (b.hist || []).map((h, i) => [b.id, i + 1, h.periodo || '', h.nota || '', h.A, h.B, h.fondo, h.part, h.total, h.cobranza,
@@ -150,6 +150,7 @@ function loadAll() {
         A: n(h.ordinarios), B: n(h.extraordinarios), fondo: n(h.fondo_reserva), part: h.particulares === '' ? null : n(h.particulares), total: n(h.total),
         cobranza: h.cobranza === '' ? null : n(h.cobranza), mora: h.morosidad === '' ? null : n(h.morosidad), cajaOrd: n(h.caja_ord_cierre),
         cajaExt: n(h.caja_ext_cierre), rubros: h.rubros_json ? JSON.parse(h.rubros_json) : null, obs: String(h.observacion || '') })),
+      rubros: b.rubros_propios ? JSON.parse(b.rubros_propios) : [],
       obs: obs,
       updated: String(b.actualizado || '')
     };
