@@ -377,19 +377,28 @@ function kpis(b,C){
 }
 const abbr=v=>{const a=Math.abs(v),sgn=v<0?'−':'';if(a>=1e6)return sgn+'$ '+(a/1e6).toLocaleString('es-AR',{maximumFractionDigits:1})+' M';if(a>=1e3)return sgn+'$ '+Math.round(a/1e3).toLocaleString('es-AR')+' mil';return sgn+'$ '+fmt(a);};
 function serie(b,C){const cur={periodo:b.cfg.periodo,A:C.A,B:C.B,total:C.total,cobranza:C.cobr,mora:C.mora,cur:true};return [...b.hist,cur].slice(-12);}
+function loteComun(b,S){const last=(S.at(-1)||{}).ufs||[];if(!last.length)return null;const cs=last.map(u=>Math.round(num(u.coef)*100)/100);const mode=cs.slice().sort((a,c)=>cs.filter(v=>v===c).length-cs.filter(v=>v===a).length)[0];return last.find(u=>Math.round(num(u.coef)*100)/100===mode)||null;}
 function chartEvol(b,C,S0){
-  const S=S0||serie(b,C),W=640,H=230,pl=8,pr=8,pt=26,pb=34,iw=W-pl-pr,ih=H-pt-pb;
-  const mx=Math.max(...S.map(p=>num(p.A)+num(p.B)),1),bw=Math.min(56,iw/S.length*0.58),step=iw/S.length;
-  const y=v=>pt+ih-(v/mx)*ih;
+  const S=S0||serieFull(b,C),mode=window._evMode||'barrio',lc=loteComun(b,S);
+  const vals=S.map(p=>{if(mode==='lote'&&lc){const u=(p.ufs||[]).find(x=>x.id===lc.id);if(u)return {a:num(u.ord),e:num(u.ext)};const r=C.rows.find(x=>x.u.id===lc.id),sh=r?r.p:0;return {a:num(p.A)*sh,e:num(p.B)*sh};}return {a:num(p.A),e:num(p.B)};});
+  const W=680,H=270,pl=8,pr=8,pt=30,pb=40,iw=W-pl-pr,ih=H-pt-pb;
+  const mx=Math.max(...vals.map(v=>v.a+v.e),1),step=iw/S.length,bw=Math.min(54,step*0.62);
   let g=`<line class="grid" x1="${pl}" x2="${W-pr}" y1="${pt+ih}" y2="${pt+ih}"/>`;
-  S.forEach((p,i)=>{const cx=pl+step*i+step/2,x=cx-bw/2,a=Math.max(num(p.A),0),bb=Math.max(num(p.B),0),hA=ih*a/mx,hB=ih*bb/mx;
-    const tip=`<b>${perLabel(p.periodo)}${p.cur?' (en curso)':''}</b><br>Ordinarios: ${money(p.A)}<br>Extraordinarios: ${money(p.B)}<br>Total: ${money(num(p.A)+num(p.B))}${p.mora!=null?'<br>Morosidad: '+pct(p.mora):''}`;
-    g+=`<rect class="bA" x="${x}" y="${pt+ih-hA}" width="${bw}" height="${Math.max(hA,0)}" rx="4"/>`;
-    if(hB>0)g+=`<rect class="bB" x="${x}" y="${pt+ih-hA-hB}" width="${bw}" height="${Math.max(hB-2,0)}" rx="4"/>`;
-    g+=`<text class="val" x="${cx}" y="${pt+ih-hA-hB-7}" text-anchor="middle">${abbr(num(p.A)+num(p.B))}</text>`;
-    const lab=perLabel(p.periodo).split(' ');g+=`<text x="${cx}" y="${H-14}" text-anchor="middle"${p.cur?' style="font-weight:700;fill:var(--ink)"':''}>${esc((lab[0]||'').slice(0,3))} ${esc((lab[1]||'').slice(2))}</text>`;
-    g+=`<rect class="hit" x="${pl+step*i}" y="${pt-10}" width="${step}" height="${ih+10}" data-tip="${esc(tip)}"/>`;});
-  return `<div class="legend"><span><i style="background:var(--c1)"></i>Ordinarios</span><span><i style="background:var(--c2)"></i>Extraordinarios</span></div><div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolución mensual de gastos">${g}</svg></div>`;
+  S.forEach((p,i)=>{const v=vals[i],cx=pl+step*i+step/2,x=cx-bw/2,hA=ih*Math.max(v.a,0)/mx,hB=ih*Math.max(v.e,0)/mx,t=v.a+v.e;
+    const tip=`<b>${perLabel(p.periodo)}${p.cur?' (en curso)':''}</b>${mode==='lote'&&lc?`<br><i>${esc(lc.id)} (coef. ${pct(num(lc.coef)/100)})</i>`:''}<br>Ordinarios: ${money(v.a)}<br>Extraordinarios: ${money(v.e)}<br><b>Total: ${money(t)}</b>${mode!=='lote'&&lc?(()=>{const u=(p.ufs||[]).find(x=>x.id===lc.id);return u?`<br>Lote común: ${money(num(u.ord)+num(u.ext))} (ord. ${money(u.ord)} · ext. ${money(u.ext)})`:'';})():''}${p.mora!=null?'<br>Morosidad: '+pct(p.mora):''}`;
+    if(hA>0)g+=`<rect class="bA" x="${x}" y="${pt+ih-hA}" width="${bw}" height="${hA}" rx="4"/>`;
+    if(hB>0)g+=`<rect class="bB" x="${x}" y="${pt+ih-hA-hB}" width="${bw}" height="${Math.max(hB-2,1)}" rx="4"/>`;
+    if(hA>=18)g+=`<text x="${cx}" y="${pt+ih-hA/2+4}" text-anchor="middle" style="fill:#fff;font-size:10.5px;font-weight:600">${abbr(v.a).replace('$ ','')}</text>`;
+    if(hB>=18)g+=`<text x="${cx}" y="${pt+ih-hA-hB/2+3}" text-anchor="middle" style="fill:#fff;font-size:10.5px;font-weight:600">${abbr(v.e).replace('$ ','')}</text>`;
+    g+=`<text class="val" x="${cx}" y="${pt+ih-hA-hB-8}" text-anchor="middle">${t?abbr(t):'sin gastos'}</text>`;
+    const lab=perLabel(p.periodo).split(' ');g+=`<text x="${cx}" y="${H-20}" text-anchor="middle"${p.cur?' style="font-weight:700;fill:var(--ink)"':''}>${esc((lab[0]||'').slice(0,3))} ${esc((lab[1]||'').slice(2))}</text>`;
+    if(v.e>0)g+=`<text x="${cx}" y="${H-6}" text-anchor="middle" style="fill:var(--c2);font-size:10px;font-weight:600">ext. ${abbr(v.e).replace('$ ','')}</text>`;
+    g+=`<rect class="hit" x="${pl+step*i}" y="${pt-14}" width="${step}" height="${ih+14}" data-tip="${esc(tip)}"/>`;});
+  const sw=lc?`<div class="row noprint" style="gap:4px;margin:0 0 8px"><button class="btn ${mode!=='lote'?'':'ghost'}" data-ev="barrio" style="padding:5px 10px">Todo el barrio</button><button class="btn ${mode==='lote'?'':'ghost'}" data-ev="lote" style="padding:5px 10px">Un lote común (${esc(lc.id)}, ${pct(num(lc.coef)/100)})</button></div>`:'';
+  const tot=vals.reduce((a,v)=>({a:a.a+v.a,e:a.e+v.e}),{a:0,e:0});
+  const dif=S.map(p=>({p,c:(p.ufs||[]).reduce((a,u)=>a+num(u.ext),0),g:num(p.B)})).filter(x=>(p=>p.ufs&&p.ufs.length)(x.p)&&Math.abs(x.c-x.g)>Math.max(1000,x.g*0.01));
+  const note=dif.length?`<p class="lead mt">${mode==='lote'?'Este gráfico muestra lo que se le <b>cobró</b> al lote.':'Este gráfico muestra los <b>gastos</b> de cada mes.'} En ${dif.map(x=>perLabel(x.p.periodo)).join(', ')} lo cobrado como extraordinario no coincide con el gasto extraordinario del mes: ${dif.map(x=>`${mlab(x.p.periodo)} se cobró ${abbr(x.c)} y se gastó ${abbr(x.g)}`).join(' · ')}.</p>`:'';
+  return sw+`<div class="legend"><span><i style="background:var(--c1)"></i>Ordinarios ${money(tot.a)}</span><span><i style="background:var(--c2)"></i>Extraordinarios ${money(tot.e)}</span><span>Total ${money(tot.a+tot.e)}${mode==='lote'?' por lote':''}</span></div><div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gasto mensual ordinario y extraordinario">${g}</svg></div>`+note;
 }
 function indicadores(b,C){
   const n=b.ufs.length||1,top=Object.entries(C.rub).map(([r,x])=>[r,x.A+x.B]).sort((a,c)=>c[1]-a[1])[0];
@@ -423,7 +432,7 @@ function vResumen(b,C){
    <div class="bars">${rs.map(([r,t,isB])=>`<div class="br"><div>${esc(r)}</div><div class="track"><div class="fill ${t<0?'neg':isB?'b':''}" style="width:${Math.abs(t)/mx*100}%"></div></div><div class="amt">${money(t)}</div><div class="pc">${tg?pct(t/tg):''}</div></div>`).join('')}</div>
    ${obsT?`<p class="mt" style="font-size:13px"><b>Lectura del mes:</b> ${esc(obsT)}</p>`:''}</div>
    <div class="card"><h2>Para revisar ${qi('controles')}</h2><p class="lead">Alertas automáticas del período.</p>${ct.length?`<table><tbody>${ct.slice(0,7).map(x=>`<tr><td style="width:84px"><span class="st ${x.st}">${x.st==='bad'?'Revisar':'Atención'}</span></td><td><b>${x.t}</b><br><span class="muted" style="font-size:12.5px">${x.r}</span></td></tr>`).join('')}</tbody></table>${ct.length>7?`<p class="lead mt">y ${ct.length-7} más.</p>`:''}`:'<p class="muted">Sin alertas.</p>'}<div class="mt"><a class="btn ghost noprint" data-v="controles">Ver todos los controles</a></div></div></div>
-  <div class="two"><div class="card"><h2>Evolución mensual</h2><p class="lead">Gastos liquidados por mes (últimos 12). Pasá el mouse sobre una barra para ver el detalle.</p>${chartEvol(b,C)}</div>
+  <div class="two"><div class="card"><h2>Evolución mensual</h2><p class="lead">Ordinario y extraordinario de cada mes. Cambiá a "Un lote común" para ver lo que le tocó pagar a un lote.</p>${chartEvol(b,C,serieFull(b,C).slice(-12))}</div>
    <div class="card"><h2>Indicadores clave</h2><p class="lead">Los números que conviene mirar todos los meses.</p>${indicadores(b,C)}</div></div>
   <div class="card"><h2>Deuda por unidad ${qi('morosidad')}</h2><p class="lead">Saldo impago del mes anterior (capital más intereses previos).</p>${deudores(b,C)}</div>`;
 }
@@ -529,7 +538,7 @@ function vEstadisticas(b,C){
   const det=`<div class="row noprint" style="margin-bottom:10px"><select id="smPick" style="max-width:260px">${S.map((p,i)=>`<option value="${i}" ${i===mi?'selected':''}>${perLabel(p.periodo)}${p.cur?' (en curso)':''}</option>`).join('')}</select></div>`+
     ((M.gastos||[]).length?`<div class="tw"><table><thead><tr><th>Rubro</th><th>Proveedor / concepto</th><th>Tipo</th><th class="n">Importe</th></tr></thead><tbody>${M.gastos.map(g=>`<tr><td class="nw">${esc(g.rubro)}</td><td style="font-size:12.5px">${esc(g.prov)}</td><td class="nw"><span class="tag ${g.tipo==='B'?'b':''}">${g.tipo==='P'?'Particular':g.tipo}</span>${g.reclas?' <span class="st warn">Reclasificado</span>':''}${g.pend?' <span class="st bad">Falta explicar</span>':''}</td><td class="n">${fmt(g.imp)}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="3">Total</td><td class="n">${fmt(M.gastos.reduce((a,g)=>a+num(g.imp),0))}</td></tr></tfoot></table></div>`:'<p class="muted">Ese mes no tiene gastos cargados.</p>');
   return help('estadisticas')+k+
-   `<div class="two"><div class="card"><h2>Gasto mensual</h2><p class="lead">Ordinarios y extraordinarios por mes.</p>${chartEvol(b,C,S)}</div>
+   `<div class="two"><div class="card"><h2>Gasto mensual</h2><p class="lead">Ordinario y extraordinario de cada mes, para el barrio o para un lote común.</p>${chartEvol(b,C,S)}</div>
     <div class="card"><h2>Cuánto paga un lote tipo</h2><p class="lead">${tipo?esc(tipo.id)+', coeficiente '+nl(mode)+'%':'—'}: expensa del mes sin deudas ni intereses.</p>${lineChart(L,[{name:'Ordinarias',color:'var(--c1)',vals:loteVals.map(v=>v?v.o:null)},...(loteVals.some(v=>v&&v.e)?[{name:'Extraordinarias',color:'var(--c2)',vals:loteVals.map(v=>v?v.e:null)}]:[])],money)}</div></div>
    <div class="card"><h2>Gastos por rubro, mes a mes</h2><p class="lead">Para ver qué rubro explica cada suba o baja.</p>${tabla}</div>
    <div class="two"><div class="card"><h2>Morosidad ${qi('morosidad')}</h2><p class="lead">Parte de lo exigible que quedó impaga en cada liquidación.</p>${barChart(L,S.map(p=>p.mora),v=>pct(v),'var(--c1)',{name:'Morosidad'})}</div>
@@ -771,6 +780,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qi'),pop=$('pop
     let x=Math.min(Math.max(8,r.left-w/2+8),innerWidth-w-8),y=r.bottom+8;if(y+h>innerHeight-8)y=r.top-h-8;pop.style.left=x+'px';pop.style.top=y+'px';return;}
   if(!e.target.closest('#pop'))pop.style.display='none';},true);
 document.addEventListener('scroll',()=>{$('pop').style.display='none';},true);
+document.addEventListener('click',e=>{const ev=e.target.closest('[data-ev]');if(ev){window._evMode=ev.dataset.ev;render();return;}});
 document.addEventListener('click',e=>{const nv=e.target.closest('[data-v]');if(nv){e.preventDefault();go(nv.dataset.v);return;}});
 document.addEventListener('click',e=>{const t=e.target,b=B();if(!b)return;
   if(t.dataset.delu!==undefined){b.ufs.splice(+t.dataset.delu,1);touch();render();}
