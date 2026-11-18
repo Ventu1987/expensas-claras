@@ -446,7 +446,7 @@ function serieFull(b,C){
 }
 const mlab=p=>{const l=perLabel(p).split(' ');return (l[0]||'').slice(0,3)+' '+(l[1]||'').slice(2);};
 function lineChart(labels,series,fmtV,opt={}){
-  const W=640,H=opt.h||220,pl=64,pr=14,pt=16,pb=30,iw=W-pl-pr,ih=H-pt-pb,all=series.flatMap(s=>s.vals.filter(v=>v!=null));
+  const W=680,H=opt.h||270,pl=64,pr=34,pt=26,pb=30,iw=W-pl-pr,ih=H-pt-pb,all=series.flatMap(s=>s.vals.filter(v=>v!=null));
   let mn=Math.min(0,...all),mx=Math.max(...all,1);if(mx===mn)mx=mn+1;const pad=(mx-mn)*.08;mx+=pad;if(mn<0)mn-=pad;
   const x=i=>pl+(labels.length<2?iw/2:iw*i/(labels.length-1)),y=v=>pt+ih-(v-mn)/(mx-mn)*ih;
   const ticks=[mn<0?mn:0,(mx+(mn<0?mn:0))/2,mx].map(v=>Math.round(v));
@@ -455,6 +455,9 @@ function lineChart(labels,series,fmtV,opt={}){
   series.forEach(s=>{const pts=s.vals.map((v,i)=>v==null?null:[x(i),y(v)]).filter(Boolean);
     g+=`<polyline fill="none" stroke="${s.color}" stroke-width="2.25" stroke-linejoin="round" points="${pts.map(p=>p.join(',')).join(' ')}"/>`;
     s.vals.forEach((v,i)=>{if(v!=null)g+=`<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="${s.color}" stroke="var(--surface)" stroke-width="2"/>`;});});
+  if(opt.labels!==false)series.forEach((s,si)=>s.vals.forEach((v,i)=>{if(v==null)return;const yy=y(v);
+    const others=series.filter((o,oi)=>oi!==si&&o.vals[i]!=null).map(o=>y(o.vals[i]));const below=others.some(o=>o<yy&&yy-o<22)||(si>0&&others.some(o=>Math.abs(o-yy)<22&&o<=yy));
+    const ly=below?yy+19:yy-10;g+=`<text x="${x(i)}" y="${ly}" text-anchor="middle" style="font-size:13px;font-weight:700;fill:${s.color};paint-order:stroke;stroke:var(--surface);stroke-width:3.5px">${opt.pct?pct(v/100):abbr(v).replace('$ ','')}</text>`;}));
   labels.forEach((l,i)=>{g+=`<text x="${x(i)}" y="${H-10}" text-anchor="middle">${esc(mlab(l))}</text>`;
     const tip=`<b>${perLabel(l)}</b>`+series.map(s=>`<br>${esc(s.name)}: ${s.vals[i]==null?'—':fmtV(s.vals[i])}`).join('');
     const w=labels.length<2?iw:iw/(labels.length-1);g+=`<rect class="hit" x="${x(i)-w/2}" y="${pt}" width="${w}" height="${ih}" data-tip="${esc(tip)}"/>`;});
