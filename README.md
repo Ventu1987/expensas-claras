@@ -11,6 +11,7 @@ App web para liquidar y controlar expensas de barrios cerrados chicos. Es un sol
 - Controles automáticos: conciliación, fondos negativos, créditos sin cobrar, gastos sin comprobante, morosidad, gastos bancarios, variaciones fuertes y rubros sin explicar.
 - **Modo Doña Rosa**: cada sección explica sus conceptos en lenguaje simple.
 - Modo claro y modo oscuro.
+- Todos los montos con separador de miles; opción de mostrar centavos (Configuración > Preferencias). Los campos aceptan "1234567,89" o "1.234.567,89".
 - PDF de la pantalla actual, del informe completo del período o de todos los estados de cuenta (uno por hoja).
 - Cierre de período: pasa los saldos al mes siguiente y guarda el historial.
 
@@ -38,7 +39,7 @@ La clave protege la planilla: sin ella, la app web no lee ni escribe nada.
 
 ### 3. Conectar la app con la planilla
 
-1. Abrí la app publicada y entrá en **Google Sheets**, en el menú de la izquierda.
+1. Abrí la app publicada y entrá en **Configuración**, en el menú de la izquierda.
 2. Pegá la URL `/exec` y la clave. Tocá **Probar conexión**.
 3. La primera vez, tocá **Subir todo a la planilla**. Desde ahí, cada cambio se guarda solo, unos segundos después.
 4. En otra computadora: abrí la app, cargá la URL y la clave, y tocá **Traer todo desde la planilla**.
@@ -55,6 +56,6 @@ La clave protege la planilla: sin ella, la app web no lee ni escribe nada.
 
 ## Notas
 
-- Sin conexión a la planilla, los datos quedan solo en el navegador. Usá "Copiar todo", en la sección Google Sheets, como respaldo manual.
+- Sin conexión a la planilla, los datos quedan solo en el navegador. Usá "Copiar todo", en Configuración, como respaldo manual.
 - La vista previa de la app dentro de Claude no permite imprimir ni conectarse con Google. Las dos cosas funcionan en la versión publicada en GitHub Pages.
 - Si cambiás `Code.gs`, hacé **Implementar > Gestionar implementaciones > Editar > Nueva versión** para que la URL siga funcionando con el código nuevo.

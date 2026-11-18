@@ -178,9 +178,13 @@ const KEY='expensas-claras-v1';
 const $=id=>document.getElementById(id);
 const num=v=>(v===''||v==null||isNaN(+v))?0:+v;
 const has=v=>!(v===''||v==null);
-const fmt=v=>(v==null||isNaN(v))?'—':(Math.round(v)||0).toLocaleString('es-AR');
+const DEC=()=>(typeof D!=='undefined'&&D&&D.cents)?2:0;
+const fmt=v=>{if(v==null||v===''||isNaN(v))return '—';const d=DEC(),x=Math.round(+v*10**d)/10**d||0;return x.toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});};
+const fmtIn=v=>has(v)&&!isNaN(+v)?(+v).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2}):'';
+const parseIn=t=>{t=String(t).trim().replace(/\s|\$/g,'');if(t==='')return '';if(/,/.test(t))t=t.replace(/\./g,'').replace(',','.');else if(/^-?\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,'');const x=Number(t);return isNaN(x)?null:x;};
+const mIn=(attrs,v,ph='')=>`<input class="n m" type="text" inputmode="decimal" autocomplete="off" ${attrs} value="${fmtIn(v)}" placeholder="${ph}">`;
 const nl=v=>num(v).toLocaleString('es-AR');
-const money=v=>(v==null||isNaN(v))?'—':'$ '+fmt(v);
+const money=v=>(v==null||v===''||isNaN(v))?'—':(+v<0?'−$ '+fmt(-v):'$ '+fmt(v));
 const pct=v=>(v==null||isNaN(v)||!isFinite(v))?'—':(v*100).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
 const sg=v=>(v==null||!isFinite(v))?'—':(v>0?'+':'')+pct(v);
 const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -219,7 +223,7 @@ function demo(){
   const p=new Date().toISOString().slice(0,7);
   const g=[['Seguridad y vigilancia','Vigilancia El Faro SRL','FC A 0003-00012345','A',5400000],['Personal (sueldos y cargas)','Sueldo y cargas sociales mantenimiento','F.931','A',1450000],['Mantenimiento de espacios verdes','Parquizaciones Norte','FC C 0001-00000877','A',980000],['Mantenimiento edilicio e instalaciones','Bombas y tanques: limpieza semestral','FC C 0002-00000221','A',310000],['Servicios públicos (luz, agua)','Edenor espacios comunes','FC B 0045-00998812','A',420000],['Limpieza y residuos','Recolección de poda','FC C 0004-00001102','A',260000],['Seguros','Integral consorcio + RC','Póliza 55-778','A',390000],['Honorarios de administración','Honorarios del período','FC C 0001-00000045','A',660000],['Gastos bancarios e impuestos','Comisiones y mantenimiento de cuenta','Resumen bancario','A',85000],['Obras y mejoras','Reparación de portón de acceso (cuota 1/3)','FC A 0007-00000310','B',600000]];
   return {id:'demo',nombre:'Barrio Ejemplo',zona:'GBA Norte',admin:'Propia',
-    cfg:{...blankCfg(),periodo:p,venc:p+'-10',fondo:5,interes:3,cajaOrd:1800000,fondoacum:2500000},
+    cfg:{...blankCfg(),periodo:p,venc:p+'-10',fondo:5,interes:3,cajaOrd:1800000,cajaExt:1800000,fondoacum:2500000},
     ufs:M2.map((m,i)=>{const s=Math.round(10710000*m/TM);return {id:'UF '+(i+1),prop:'',coef:m,saldo:s+(i===11?520000:0),intPrev:0,pagos:i===11||i===4?0:s,part:0,ref:''};}),
     gastos:g.map(x=>({fecha:p+'-05',rubro:x[0],prov:x[1],comp:x[2],tipo:x[3],imp:x[4]})),
     hist:[{periodo:'(anterior)',A:10200000,B:0,fondo:510000,part:0,total:10710000,cobranza:9900000,mora:0.07,cajaOrd:1800000,cajaExt:0,obs:'',rubros:{'Seguridad y vigilancia':5100000,'Personal (sueldos y cargas)':1380000,'Mantenimiento de espacios verdes':1020000,'Mantenimiento edilicio e instalaciones':180000,'Servicios públicos (luz, agua)':395000,'Limpieza y residuos':250000,'Seguros':390000,'Honorarios de administración':630000,'Gastos bancarios e impuestos':80000}}],
@@ -310,7 +314,7 @@ const I={
 };
 const ic=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${I[k]}</svg>`;
 const VIEWS=[['resumen','Resumen'],['unidades','Unidades'],['gastos','Gastos'],['liquidacion','Liquidación'],['caja','Caja y banco'],['controles','Controles'],['cuenta','Estado de cuenta'],['historial','Historial'],['ajustes','Ajustes del barrio']];
-const GLOBAL=[['inicio','Mis barrios','home'],['conexion','Google Sheets','conexion']];
+const GLOBAL=[['inicio','Mis barrios','home'],['conexion','Configuración','conexion']];
 
 /* ---------- Navegación ---------- */
 function go(v){D.view=v;persist();if(location.hash!=='#'+v)history.replaceState(null,'','#'+v);render();window.scrollTo(0,0);}
@@ -366,8 +370,8 @@ function vUnidades(b,C){
   const sum=f=>b.ufs.reduce((s,u)=>s+num(u[f]),0);
   return help('unidades')+`<div class="card"><div class="card-h"><div><h2>Unidades funcionales ${qi('unidades')}</h2><p class="lead">Coeficiente en %, m² o peso relativo (se normaliza a 100%). Si el saldo anterior incluye intereses viejos, cargalos en su columna: así no se cobra interés sobre interés.</p></div><button class="btn noprint" id="addUf">${ic('plus')}Agregar unidad</button></div>
   <div class="tw"><table><thead><tr><th>Unidad</th><th>Propietario</th><th class="n">Coeficiente</th><th class="n">%</th><th class="n">Saldo anterior</th><th class="n">Intereses en el saldo</th><th class="n">Pagos del mes</th><th class="n">Particulares</th><th class="n">Total según admin.</th><th class="noprint"></th></tr></thead><tbody>`+
-  b.ufs.map((u,i)=>`<tr><td><input data-u="${i}" data-f="id" value="${esc(u.id)}" style="min-width:80px"></td><td><input data-u="${i}" data-f="prop" value="${esc(u.prop)}" placeholder="—" style="min-width:150px"></td><td><input class="n" type="number" data-u="${i}" data-f="coef" value="${u.coef??''}"></td><td class="n">${pct(C.rows[i].p)}</td>`+
-   ['saldo','intPrev','pagos','part','ref'].map(f=>`<td><input class="n" type="number" step="0.01" data-u="${i}" data-f="${f}" value="${u[f]??''}"></td>`).join('')+`<td class="noprint"><button class="x" data-delu="${i}" title="Quitar">×</button></td></tr>`).join('')+
+  b.ufs.map((u,i)=>`<tr><td><input data-u="${i}" data-f="id" value="${esc(u.id)}" style="min-width:80px"></td><td><input data-u="${i}" data-f="prop" value="${esc(u.prop)}" placeholder="—" style="min-width:150px"></td><td>${mIn(`data-u="${i}" data-f="coef"`,u.coef)}</td><td class="n">${pct(C.rows[i].p)}</td>`+
+   ['saldo','intPrev','pagos','part','ref'].map(f=>`<td>${mIn(`data-u="${i}" data-f="${f}"`,u[f])}</td>`).join('')+`<td class="noprint"><button class="x" data-delu="${i}" title="Quitar">×</button></td></tr>`).join('')+
   `</tbody><tfoot><tr><td colspan="2">Total</td><td class="n">${fmt(C.tc)}</td><td class="n">100,00%</td><td class="n">${fmt(sum('saldo'))}</td><td class="n">${fmt(sum('intPrev'))}</td><td class="n">${fmt(C.cobr)}</td><td class="n">${fmt(C.partT)}</td><td class="n">${b.ufs.some(u=>has(u.ref))?fmt(sum('ref')):'—'}</td><td class="noprint"></td></tr></tfoot></table></div></div>`;
 }
 function vGastos(b,C){
@@ -375,7 +379,7 @@ function vGastos(b,C){
   const list=b.gastos.map((g,i)=>[g,i]).filter(([g])=>!f||(g.prov+' '+g.rubro+' '+g.comp).toLowerCase().includes(f));
   return help('gastos')+`<div class="card"><div class="card-h"><div><h2>Gastos del mes (devengados)</h2><p class="lead">Tipo A = ordinario · Tipo B = extraordinario · Negativo = crédito a favor del barrio.</p></div><input id="gFilter" class="noprint" placeholder="Buscar proveedor, rubro o comprobante" value="${esc(window._gf||'')}" style="max-width:280px"><button class="btn noprint" id="addG">${ic('plus')}Agregar gasto</button></div>
   <div class="tw"><table><thead><tr><th style="width:130px">Fecha</th><th style="width:220px">Rubro</th><th>Proveedor / concepto</th><th style="width:170px">Comprobante</th><th style="width:70px">Tipo</th><th class="n" style="width:150px">Importe</th><th class="noprint"></th></tr></thead><tbody>`+
-  list.map(([g,i])=>`<tr><td><input type="date" data-g="${i}" data-f="fecha" value="${esc(g.fecha)}"></td><td><select data-g="${i}" data-f="rubro">${RUBROS.map(r=>`<option ${r===g.rubro?'selected':''}>${r}</option>`).join('')}</select></td><td><input data-g="${i}" data-f="prov" value="${esc(g.prov)}"></td><td><input data-g="${i}" data-f="comp" value="${esc(g.comp)}"></td><td><select data-g="${i}" data-f="tipo"><option ${g.tipo!=='B'?'selected':''}>A</option><option ${g.tipo==='B'?'selected':''}>B</option></select></td><td><input class="n" type="number" step="0.01" data-g="${i}" data-f="imp" value="${g.imp}"></td><td class="noprint"><button class="x" data-delg="${i}" title="Quitar">×</button></td></tr>`).join('')+
+  list.map(([g,i])=>`<tr><td><input type="date" data-g="${i}" data-f="fecha" value="${esc(g.fecha)}"></td><td><select data-g="${i}" data-f="rubro">${RUBROS.map(r=>`<option ${r===g.rubro?'selected':''}>${r}</option>`).join('')}</select></td><td><input data-g="${i}" data-f="prov" value="${esc(g.prov)}"></td><td><input data-g="${i}" data-f="comp" value="${esc(g.comp)}"></td><td><select data-g="${i}" data-f="tipo"><option ${g.tipo!=='B'?'selected':''}>A</option><option ${g.tipo==='B'?'selected':''}>B</option></select></td><td>${mIn(`data-g="${i}" data-f="imp"`,g.imp)}</td><td class="noprint"><button class="x" data-delg="${i}" title="Quitar">×</button></td></tr>`).join('')+
   `</tbody><tfoot><tr><td colspan="5">Ordinarios (A)</td><td class="n">${money(C.A)}</td><td class="noprint"></td></tr><tr><td colspan="5">Extraordinarios (B)</td><td class="n">${money(C.B)}</td><td class="noprint"></td></tr><tr><td colspan="5">Total del mes</td><td class="n">${money(C.A+C.B)}</td><td class="noprint"></td></tr></tfoot></table></div></div>`;
 }
 function tablaRubros(b,C,editable){
@@ -431,7 +435,7 @@ function vHistorial(b,C){
     return `<tr class="${h.cur?'cur':''}"><td class="nw">${perLabel(h.periodo)}${h.cur?' <span class="tag">en curso</span>':''}${h.nota?`<br><span class="muted" style="font-size:11.5px">${esc(h.nota)}</span>`:''}</td><td class="n">${fmt(h.A)}${vA!==null?`<br><span class="${vA>0?'up':'down'}" style="font-size:11.5px">${sg(vA)}</span>`:''}</td><td class="n">${fmt(h.B)}</td><td class="n"><b>${fmt(h.total)}</b></td><td class="n ${v>0?'up':v<0?'down':''}">${sg(v)}</td><td>${obs}</td><td class="n">${fmt(h.cobranza)}</td><td class="n">${h.cur&&!h.cobranza?'—':pct(h.mora)}</td><td class="n ${h.cajaOrd<-1?'up':''}">${fmt(h.cajaOrd)}</td><td class="n ${h.cajaExt<-1?'up':''}">${fmt(h.cajaExt)}</td></tr>`;}).join('')+`</tbody></table></div></div>`;
 }
 function vAjustes(b){
-  const c=b.cfg,f=(k,l,t='number',ph='')=>`<div><label>${l}</label><input data-c="${k}" type="${t}" ${t==='number'?'class="n" step="0.01"':''} value="${esc(c[k]??'')}" placeholder="${ph}"></div>`;
+  const c=b.cfg,f=(k,l,t='number',ph='')=>`<div><label>${l}</label>${t==='number'?mIn(`data-c="${k}"`,c[k],ph):`<input data-c="${k}" type="${t}" value="${esc(c[k]??'')}" placeholder="${ph}">`}</div>`;
   return help('ajustes')+`<div class="card"><h2>Datos del barrio</h2><div class="grid mt">
    <div><label>Nombre</label><input data-b="nombre" value="${esc(b.nombre)}"></div><div><label>Zona</label><input data-b="zona" value="${esc(b.zona||'')}"></div><div><label>Administración</label><input data-b="admin" value="${esc(b.admin||'')}"></div>${f('cuit','CUIT del consorcio','text')}</div></div>
   <div class="card"><h2>Período</h2><div class="grid mt">${f('periodo','Período','month')}${f('venc','Vencimiento','date')}${f('fondo','Fondo de reserva (% de ordinarias)')}${f('interes','Interés por mora (% mensual)')}</div></div>
@@ -440,7 +444,7 @@ function vAjustes(b){
 }
 function vConexion(){
   const a=D.api;
-  return help('conexion')+`<div class="card"><h2>Conexión con Google Sheets</h2><p class="lead">Pegá la URL del Apps Script publicado como aplicación web y la clave que definiste en el script. Funciona con la app publicada en GitHub Pages (la vista previa de Claude no permite conexiones externas).</p>
+  return `<div class="card"><h2>Preferencias</h2><div class="row mt"><label style="display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:var(--ink)"><input type="checkbox" id="prefCents" ${D.cents?'checked':''} style="width:auto"> Mostrar centavos en todos los montos</label></div><p class="lead mt">Los montos siempre se muestran con separador de miles (1.234.567). Los campos de carga aceptan "1234567,89" o "1.234.567,89".</p></div>`+help('conexion')+`<div class="card"><h2>Conexión con Google Sheets</h2><p class="lead">Pegá la URL del Apps Script publicado como aplicación web y la clave que definiste en el script. Funciona con la app publicada en GitHub Pages (la vista previa de Claude no permite conexiones externas).</p>
   <div class="grid mt"><div style="grid-column:span 2"><label>URL de la aplicación web (termina en /exec)</label><input id="apiUrl" value="${esc(a.url)}" placeholder="https://script.google.com/macros/s/…/exec"></div><div><label>Clave (TOKEN)</label><input id="apiTok" type="password" value="${esc(a.token)}"></div></div>
   <div class="row mt"><label style="display:flex;gap:8px;align-items:center;margin:0"><input type="checkbox" id="apiAuto" ${a.auto?'checked':''} style="width:auto"> Guardar automáticamente en la planilla con cada cambio</label></div>
   <div class="row mt"><button class="btn" id="apiTest">Probar conexión</button><button class="btn ghost" id="apiPull">Traer todo desde la planilla</button><button class="btn ghost" id="apiPush">Subir todo a la planilla</button></div><p class="lead mt" id="apiMsg"></p></div>
@@ -473,36 +477,40 @@ function after(v){
 }
 function bindConexion(){
   const msg=t=>{const m=$('apiMsg');if(m)m.textContent=t;};
+  $('prefCents').onchange=e=>{D.cents=e.target.checked;persist();render();};
   $('apiUrl').oninput=e=>{D.api.url=e.target.value.trim();persist();syncChip();};
   $('apiTok').oninput=e=>{D.api.token=e.target.value;persist();};
   $('apiAuto').onchange=e=>{D.api.auto=e.target.checked;persist();};
   $('apiTest').onclick=async()=>{msg('Probando…');try{const r=await apiGet('ping');msg(r.ok?`Conectado. La planilla tiene ${r.barrios} barrio(s).`:'Respuesta inesperada: '+(r.error||''));setSync(r.ok?'ok':'bad');}catch(e){msg(errMsg(e));setSync('bad');}};
-  $('apiPull').onclick=async()=>{msg('Trayendo datos…');try{const r=await apiGet('load');if(!r.ok)throw new Error(r.error);if(!r.barrios.length){msg('La planilla está vacía. Usá "Subir todo".');return;}D.barrios=r.barrios;D.activeId=D.barrios[0].id;persist();msg(`Listo: ${r.barrios.length} barrio(s) traídos.`);setSync('ok');shell();}catch(e){msg(errMsg(e));setSync('bad');}};
+  $('apiPull').onclick=async()=>{msg('Trayendo datos…');try{const r=await apiGet('load');if(!r.ok)throw new Error(r.error);if(!r.barrios.length){msg('La planilla está vacía. Usá "Subir todo".');return;}const n=mergeRemote(r.barrios,true);msg(`Listo: ${r.barrios.length} barrio(s) en la planilla; ${n} actualizado(s) en este navegador.`);setSync('ok');shell();}catch(e){msg(errMsg(e));setSync('bad');}};
   $('apiPush').onclick=async()=>{msg('Subiendo…');try{for(const b of D.barrios){const r=await apiPost({action:'saveBarrio',barrio:b});if(!r.ok)throw new Error(r.error);}msg(`Listo: ${D.barrios.length} barrio(s) guardados en la planilla.`);setSync('ok');}catch(e){msg(errMsg(e));setSync('bad');}};
   $('expAll').onclick=()=>copy(JSON.stringify({v:1,barrios:D.barrios},null,1),'Respaldo copiado');
-  $('impAll').onclick=()=>{const t=$('ioAll');if(t.style.display==='none'){t.style.display='block';t.focus();return;}try{const d=JSON.parse(t.value);if(!Array.isArray(d.barrios))throw 0;d.barrios.forEach(nb=>{const i=D.barrios.findIndex(x=>x.id===nb.id);if(i>=0)D.barrios[i]=nb;else D.barrios.push(nb);});D.activeId=d.barrios[0]?.id||D.activeId;persist();queueSync(B());render();toast(d.barrios.length+' barrio(s) importados');}catch(e){toast('El texto no es un respaldo válido');}};
+  $('impAll').onclick=()=>{const t=$('ioAll');if(t.style.display==='none'){t.style.display='block';t.focus();return;}try{const d=JSON.parse(t.value);if(!Array.isArray(d.barrios))throw 0;d.barrios.forEach(nb=>{const i=D.barrios.findIndex(x=>x.id===nb.id);if(i>=0)D.barrios[i]=nb;else D.barrios.push(nb);});D.activeId=d.barrios[0]?.id||D.activeId;persist();if(D.api.url&&D.api.auto)d.barrios.forEach(x=>apiPost({action:'saveBarrio',barrio:x}).then(r=>setSync(r.ok?'ok':'bad')).catch(()=>setSync('bad')));render();toast(d.barrios.length+' barrio(s) importados');}catch(e){toast('El texto no es un respaldo válido');}};
   $('resetAll').onclick=e=>{const x=e.target;if(!x.dataset.arm){x.dataset.arm=1;x.textContent='Confirmar: se borran los datos de este navegador';setTimeout(()=>{if(x.isConnected){delete x.dataset.arm;x.textContent='Volver a los datos de ejemplo';}},4000);return;}const api=D.api;D=initial();D.api=api;D.view='inicio';persist();render();toast('Datos de ejemplo cargados');};
 }
 
 /* ---------- Edición de celdas ---------- */
 document.addEventListener('input',e=>{const t=e.target,b=B();if(!b)return;const d=t.dataset;
-  if(d.u!==undefined){b.ufs[+d.u][d.f]=t.type==='number'?(t.value===''?'':+t.value):t.value;touch();soft();}
-  else if(d.g!==undefined&&t.tagName!=='SELECT'){b.gastos[+d.g][d.f]=t.type==='number'?(t.value===''?0:+t.value):t.value;touch();soft();}
-  else if(d.c!==undefined){b.cfg[d.c]=t.type==='number'?(t.value===''?'':+t.value):t.value;touch();soft();}
+  const isM=t.classList.contains('m'),pv=isM?parseIn(t.value):null;
+  if(isM&&pv===null){t.style.borderColor='var(--bad)';return;}else if(isM)t.style.borderColor='';
+  if(d.u!==undefined){b.ufs[+d.u][d.f]=isM?pv:t.value;touch();soft();}
+  else if(d.g!==undefined&&t.tagName!=='SELECT'){b.gastos[+d.g][d.f]=isM?(pv===''?0:pv):t.value;touch();soft();}
+  else if(d.c!==undefined){b.cfg[d.c]=isM?pv:t.value;touch();soft();}
   else if(d.b!==undefined){b[d.b]=t.value;touch();soft();}
   else if(d.obs!==undefined){autosize(t);if(t.value)b.obs[d.obs]=t.value;else delete b.obs[d.obs];touch();}
   else if(d.hobs!==undefined){autosize(t);b.hist[+d.hobs].obs=t.value;touch();}
 });
+document.addEventListener('change',e=>{const t0=e.target;if(t0.classList&&t0.classList.contains('m')){const v=parseIn(t0.value);if(v!==null)t0.value=fmtIn(v);}});
 document.addEventListener('change',e=>{const t=e.target,b=B();if(b&&t.tagName==='SELECT'&&t.dataset.g!==undefined){b.gastos[+t.dataset.g][t.dataset.f]=t.value;touch();render();}});
 document.addEventListener('click',e=>{const nv=e.target.closest('[data-v]');if(nv){e.preventDefault();go(nv.dataset.v);return;}});
 document.addEventListener('click',e=>{const t=e.target,b=B();if(!b)return;
   if(t.dataset.delu!==undefined){b.ufs.splice(+t.dataset.delu,1);touch();render();}
   if(t.dataset.delg!==undefined){b.gastos.splice(+t.dataset.delg,1);touch();render();}});
-let tmr;function soft(){clearTimeout(tmr);tmr=setTimeout(()=>{const a=document.activeElement,ds=a&&a.dataset?{...a.dataset}:{},id=a&&a.id,ss=a&&a.selectionStart;
+let tmr;function soft(){clearTimeout(tmr);tmr=setTimeout(()=>{const a=document.activeElement,ds=a&&a.dataset?{...a.dataset}:{},id=a&&a.id,ss=a&&a.selectionStart,raw=a&&a.value;
   shell();$('view').innerHTML=viewHTML(D.view);after(D.view);
   let q=null;const k=Object.keys(ds).find(x=>['u','g','c','b'].includes(x));
   if(k)q=document.querySelector(`[data-${k}="${ds[k]}"]${ds.f?`[data-f="${ds.f}"]`:''}`);else if(id)q=$(id);
-  if(q){q.focus();try{if(ss!=null&&q.type!=='number')q.setSelectionRange(ss,ss);}catch(_){}}},500);}
+  if(q){if(raw!=null&&q.tagName==='INPUT')q.value=raw;q.focus();try{if(ss!=null)q.setSelectionRange(ss,ss);}catch(_){}}},600);}
 
 /* ---------- Barrio nuevo / cierre ---------- */
 function newBarrio(){
@@ -550,6 +558,8 @@ async function apiGet(action){const u=D.api.url+(D.api.url.includes('?')?'&':'?'
 async function apiPost(body){const r=await fetch(D.api.url,{method:'POST',body:JSON.stringify({...body,token:D.api.token})});return r.json();}
 function queueSync(b){if(!D.api.url||!D.api.auto)return;const target=b||B();if(!target)return;clearTimeout(syncT);setSync('saving');
   syncT=setTimeout(async()=>{try{const r=await apiPost({action:'saveBarrio',barrio:target});setSync(r.ok?'ok':'bad');}catch(e){setSync('bad');}},1800);}
+function mergeRemote(list,force){let n=0;list.forEach(rb=>{const i=D.barrios.findIndex(x=>x.id===rb.id);if(i<0){D.barrios.push(rb);n++;}else if(force||(rb.updated&&(!D.barrios[i].updated||rb.updated>D.barrios[i].updated))){D.barrios[i]=rb;n++;}});if(!B()&&D.barrios[0])D.activeId=D.barrios[0].id;persist();return n;}
+async function autoLoad(){if(!D.api.url)return;try{const r=await apiGet('load');if(r.ok){const n=mergeRemote(r.barrios,false);setSync('ok');if(n){render();toast(n+' barrio(s) actualizados desde Google Sheets');}}else setSync('bad');}catch(e){setSync('bad');}}
 async function apiDelete(id){if(!D.api.url)return;try{await apiPost({action:'deleteBarrio',id});}catch(e){}}
 
 /* ---------- Utilidades ---------- */
@@ -568,7 +578,7 @@ $('barrioPick').onchange=e=>{if(e.target.value==='__new'){shell();newBarrio();re
 $('mobNav').onchange=e=>go(e.target.value);
 window.addEventListener('hashchange',()=>{const k=location.hash.slice(1);if([...VIEWS,...GLOBAL].some(x=>x[0]===k)&&k!==D.view)go(k);});
 load();const h0=location.hash.slice(1);if([...VIEWS,...GLOBAL].some(x=>x[0]===h0))D.view=h0;render();
-if(D.api.url)setSync('idle');
+if(D.api.url){setSync('idle');autoLoad();}
 </script>
 </body>
 </html>

@@ -27,7 +27,7 @@ const SHEETS = {
   Observaciones: ['barrio_id', 'periodo', 'rubro', 'texto']
 };
 // Columnas que deben quedar como texto (evita que Sheets convierta "2026-11" en fecha).
-const TEXT_COLS = ['id', 'barrio_id', 'periodo', 'vencimiento', 'fecha', 'unidad', 'cuit', 'comprobante', 'tipo', 'rubro', 'nota'];
+const TEXT_COLS = ['id', 'barrio_id', 'periodo', 'vencimiento', 'fecha', 'unidad', 'cuit', 'comprobante', 'tipo', 'rubro', 'nota', 'actualizado'];
 
 function setup() {
   const ss = SpreadsheetApp.getActive();
@@ -76,7 +76,7 @@ function saveBarrio(b) {
   removeBarrio(b.id);
   const c = b.cfg || {};
   append('Barrios', [[b.id, b.nombre, b.zona || '', b.admin || '', c.cuit || '', c.periodo || '', c.venc || '', c.fondo, c.interes,
-    c.cajaOrd, c.cajaExt, c.fondoacum, c.cobrExt, c.egrOrd, c.egrExt, c.saldoBanco, c.obsPeriodo || '', new Date()]]);
+    c.cajaOrd, c.cajaExt, c.fondoacum, c.cobrExt, c.egrOrd, c.egrExt, c.saldoBanco, c.obsPeriodo || '', b.updated || new Date().toISOString()]]);
   append('Unidades', (b.ufs || []).map((u, i) => [b.id, i + 1, u.id, u.prop || '', u.coef, u.saldo, u.intPrev, u.pagos, u.part, u.ref]));
   append('Gastos', (b.gastos || []).map((g, i) => [b.id, c.periodo || '', i + 1, g.fecha || '', g.rubro || '', g.prov || '', g.comp || '', g.tipo || 'A', g.imp]));
   append('Historial', (b.hist || []).map((h, i) => [b.id, i + 1, h.periodo || '', h.nota || '', h.A, h.B, h.fondo, h.part, h.total, h.cobranza,
@@ -85,13 +85,21 @@ function saveBarrio(b) {
 }
 
 function removeBarrio(id) {
+  // Reescribe cada hoja sin las filas del barrio (más rápido que borrar fila por fila).
   Object.keys(SHEETS).forEach(name => {
     const sh = SpreadsheetApp.getActive().getSheetByName(name);
     const n = sh.getLastRow();
     if (n < 2) return;
-    const col = name === 'Barrios' ? 1 : 1;
-    const ids = sh.getRange(2, col, n - 1, 1).getValues();
-    for (let r = ids.length - 1; r >= 0; r--) if (String(ids[r][0]) === String(id)) sh.deleteRow(r + 2);
+    const w = SHEETS[name].length;
+    const data = sh.getRange(2, 1, n - 1, w).getValues();
+    const keep = data.filter(r => String(r[0]) !== String(id));
+    if (keep.length === data.length) return;
+    sh.getRange(2, 1, n - 1, w).clearContent();
+    if (keep.length) {
+      const range = sh.getRange(2, 1, keep.length, w);
+      range.setNumberFormats(keep.map(() => SHEETS[name].map(col => TEXT_COLS.indexOf(col) >= 0 ? '@' : 'General')));
+      range.setValues(keep);
+    }
   });
 }
 
