@@ -6,6 +6,7 @@ App web para liquidar y controlar expensas de barrios cerrados chicos. Es un sol
 
 - Rubros propios por barrio ("+ Nuevo rubro…" al cargar un gasto).
 - Resumen con composición del gasto, evolución mensual, indicadores clave y deuda por unidad.
+- Presupuestos contra lo pagado: cada presupuesto con sus ítems, la parte que le toca al barrio, los pagos vinculados (con factura, a confirmar y fuera de presupuesto) y el análisis de si dan los números.
 - Extraordinarias: lo cobrado y gastado como extraordinario mes a mes, cronología de una obra con lo facturado y lo pagado por fuera de la liquidación, cuánto pagó cada unidad, montos sin explicar y preguntas para reclamar (con PDF).
 - Estadísticas de todos los meses: gastos por rubro mes a mes, cuánto paga un lote tipo, morosidad, caja, principales proveedores, deuda por unidad mes a mes y controles entre meses (saldos que no cierran, recargos, cambios de coeficiente y de honorarios, cobros no identificados).
 - Varios barrios, cada uno con sus secciones: Resumen, Unidades, Gastos, Liquidación, Caja y banco, Controles, Estado de cuenta, Historial y Ajustes.

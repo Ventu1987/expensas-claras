@@ -18,7 +18,7 @@ const TOKEN = 'CAMBIAR-ESTA-CLAVE';
 const SHEETS = {
   Barrios: ['id', 'nombre', 'zona', 'administracion', 'cuit', 'periodo', 'vencimiento', 'fondo_reserva_pct', 'interes_pct',
             'caja_ord_inicial', 'caja_ext_inicial', 'fondo_reserva_acum', 'cobranza_ext', 'egresos_ord', 'egresos_ext',
-            'saldo_banco', 'observaciones_periodo', 'actualizado', 'rubros_propios', 'cobros_no_identificados', 'pagos_fuera_json', 'alias_proveedores_json', 'preguntas_json'],
+            'saldo_banco', 'observaciones_periodo', 'actualizado', 'rubros_propios', 'cobros_no_identificados', 'pagos_fuera_json', 'alias_proveedores_json', 'preguntas_json', 'presupuestos_json'],
   Unidades: ['barrio_id', 'orden', 'unidad', 'propietario', 'coeficiente', 'saldo_anterior', 'intereses_en_saldo',
              'pagos', 'particulares', 'total_segun_admin'],
   Gastos: ['barrio_id', 'periodo', 'orden', 'fecha', 'rubro', 'proveedor_concepto', 'comprobante', 'tipo', 'importe', 'falta_explicar'],
@@ -76,7 +76,7 @@ function saveBarrio(b) {
   removeBarrio(b.id);
   const c = b.cfg || {};
   append('Barrios', [[b.id, b.nombre, b.zona || '', b.admin || '', c.cuit || '', c.periodo || '', c.venc || '', c.fondo, c.interes,
-    c.cajaOrd, c.cajaExt, c.fondoacum, c.cobrExt, c.egrOrd, c.egrExt, c.saldoBanco, c.obsPeriodo || '', b.updated || new Date().toISOString(), JSON.stringify(b.rubros || []), c.cobrosNoId ? JSON.stringify(c.cobrosNoId) : '', JSON.stringify(b.pagosFuera || []), JSON.stringify(b.alias || {}), JSON.stringify(b.preguntasExtra || [])]]);
+    c.cajaOrd, c.cajaExt, c.fondoacum, c.cobrExt, c.egrOrd, c.egrExt, c.saldoBanco, c.obsPeriodo || '', b.updated || new Date().toISOString(), JSON.stringify(b.rubros || []), c.cobrosNoId ? JSON.stringify(c.cobrosNoId) : '', JSON.stringify(b.pagosFuera || []), JSON.stringify(b.alias || {}), JSON.stringify(b.preguntasExtra || []), JSON.stringify(b.presupuestos || [])]]);
   append('Unidades', (b.ufs || []).map((u, i) => [b.id, i + 1, u.id, u.prop || '', u.coef, u.saldo, u.intPrev, u.pagos, u.part, u.ref]));
   append('Gastos', (b.gastos || []).map((g, i) => [b.id, c.periodo || '', i + 1, g.fecha || '', g.rubro || '', g.prov || '', g.comp || '', g.tipo || 'A', g.imp, g.pend ? 'SI' : '']));
   append('Historial', (b.hist || []).map((h, i) => [b.id, i + 1, h.periodo || '', h.nota || '', h.A, h.B, h.fondo, h.part, h.total, h.cobranza,
@@ -156,6 +156,7 @@ function loadAll() {
       pagosFuera: b.pagos_fuera_json ? JSON.parse(b.pagos_fuera_json) : [],
       alias: b.alias_proveedores_json ? JSON.parse(b.alias_proveedores_json) : {},
       preguntasExtra: b.preguntas_json ? JSON.parse(b.preguntas_json) : [],
+      presupuestos: b.presupuestos_json ? JSON.parse(b.presupuestos_json) : [],
       obs: obs,
       updated: String(b.actualizado || '')
     };

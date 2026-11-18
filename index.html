@@ -541,6 +541,35 @@ function vEstadisticas(b,C){
 }
 /* ---------- Extraordinarias ---------- */
 const isCam=t=>/c[aá]mara|cctv|monitoreo|fibra|seguridad electr|obra civil|columna/i.test(t||'')&&!/cubierta/i.test(t||'');
+
+const normT=t=>String(t||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+function presMatch(b,S){
+  const cands=[];S.forEach(p=>(p.gastos||[]).forEach(g=>cands.push({per:p.periodo,text:g.prov,imp:num(g.imp),fact:true})));(b.pagosFuera||[]).forEach(x=>cands.push({per:x.periodo,text:x.concepto,imp:num(x.imp),fact:false}));
+  const res=(b.presupuestos||[]).map(()=>[]);
+  cands.forEach(c=>{const n=normT(c.text);for(let k=0;k<(b.presupuestos||[]).length;k++){const r=(b.presupuestos[k].reglas||[]).find(r=>new RegExp(r.re).test(n));if(r){res[k].push({...c,rol:c.fact?r.rol:'A confirmar (sin factura)'});break;}}});
+  return res;
+}
+function presupuestosHTML(b,S){
+  const P=b.presupuestos||[];if(!P.length)return '';const M=presMatch(b,S);
+  return P.map((p,k)=>{const usd=p.moneda==='USD',tot=p.items.reduce((a,x)=>a+num(x[1]),0),totI=tot*(1+num(p.iva)/100),share=num(p.share)/100,parte=totI*share;
+    const fx=t=>{const m=normT(t).match(/(?:VALOR|DOLAR)\s*\$?\s*([\d.]+)/);return m?Number(m[1].replace(/\./g,'')):num(p.tc)||null;};
+    const L=M[k].map(x=>({...x,u:usd&&fx(x.text)?x.imp/fx(x.text):null}));
+    const inc=L.filter(x=>x.fact&&!/^Fuera/.test(x.rol)),fuera=L.filter(x=>/^Fuera/.test(x.rol)),conf=L.filter(x=>!x.fact||/^A confirmar/.test(x.rol));
+    const incF=inc.filter(x=>!/^A confirmar/.test(x.rol));
+    const val=a=>usd?a.reduce((s,x)=>s+(x.u||0),0):a.reduce((s,x)=>s+x.imp,0);
+    const fmtM=v=>usd?'USD '+(Math.round(v)).toLocaleString('es-AR'):money(v);
+    const pc=v=>parte?pct(v/parte):'—';
+    return `<div class="card"><div class="card-h"><div><h2>${esc(p.proveedor)} · ${esc(p.titulo)}</h2><p class="lead">Presupuesto ${esc(p.numero)} del ${p.fecha.split('-').reverse().join('/')} · para ${esc(p.cliente)} · ${esc(p.estado)} · alcance: ${esc(p.alcance)}</p></div></div>
+    <div class="two"><div><table><thead><tr><th>Ítem presupuestado</th><th class="n">Importe</th></tr></thead><tbody>${p.items.map(x=>`<tr><td style="font-size:12.5px">${esc(x[0])}</td><td class="n">${fmtM(num(x[1]))}</td></tr>`).join('')}</tbody><tfoot><tr><td>Total${p.iva?' sin IVA':''}</td><td class="n">${fmtM(tot)}</td></tr>${p.iva?`<tr><td>Total con IVA (${p.iva}%)</td><td class="n">${fmtM(totI)}</td></tr>`:''}</tfoot></table>
+      <p class="lead mt"><b>No incluye:</b> ${esc(p.excluye)}</p>
+      <div class="row mt noprint"><label style="margin:0">Parte de ${esc(b.nombre)} (%)</label>${mIn(`data-pres="${k}" data-pf="share" style="max-width:90px"`,p.share)}${usd?`<label style="margin:0 0 0 10px">Dólar de referencia ($)</label>${mIn(`data-pres="${k}" data-pf="tc" style="max-width:110px"`,p.tc)}`:''}</div></div>
+     <div><div class="kpis" style="grid-template-columns:1fr 1fr">${kpi('Le corresponde a '+esc(b.nombre),fmtM(parte),share<1?`${nl(p.share)}% del total${p.iva?' con IVA':''}`:p.iva?'total con IVA':'')}${kpi('Pagado con factura (dentro del presupuesto)',fmtM(val(incF)),pc(val(incF))+' de lo que le corresponde')}${kpi('Pagos a confirmar (sin factura)',fmtM(val(conf)),conf.length+' ítem(s)',null,conf.length>0)}${kpi('Fuera del presupuesto',fmtM(val(fuera)),fuera.length+' ítem(s)',null,fuera.length>0)}</div>
+      <p style="font-size:13px;margin:4px 0 0">Si se confirman los pagos sin factura, lo pagado dentro del presupuesto llega a <b>${fmtM(val(incF)+val(conf))}</b> (${pc(val(incF)+val(conf))}); con lo que está fuera del presupuesto, a <b>${fmtM(val(incF)+val(conf)+val(fuera))}</b> (${pc(val(incF)+val(conf)+val(fuera))}).</p></div></div>
+    <h3 style="font-size:13.5px;margin:16px 0 8px">Pagos vinculados a este presupuesto</h3>
+    <div class="tw"><table><thead><tr><th>Período</th><th style="min-width:300px">Concepto</th><th>Clasificación</th><th class="n">Importe $</th>${usd?'<th class="n">Equivale USD</th>':''}</tr></thead><tbody>${L.map(x=>`<tr><td class="nw">${perLabel(x.per)}</td><td style="font-size:12px">${esc(x.text)}</td><td><span class="st ${/^Fuera/.test(x.rol)?'warn':/A confirmar/.test(x.rol)?'bad':/^Parcial/.test(x.rol)?'warn':'info'}">${esc(x.rol)}</span></td><td class="n">${fmt(x.imp)}</td>${usd?`<td class="n">${x.u==null?'—':Math.round(x.u).toLocaleString('es-AR')}</td>`:''}</tr>`).join('')}</tbody></table></div>
+    ${(p.analisis||[]).length?`<h3 style="font-size:13.5px;margin:16px 0 8px">¿Dan los números?</h3><ul style="margin:0;padding-left:20px;line-height:1.65;font-size:13.5px">${p.analisis.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}
+    ${p.notas?`<p class="lead mt">${esc(p.notas)}</p>`:''}</div>`;}).join('');
+}
 function vExtra(b,C){
   const S=serieFull(b,C),c=b.cfg;
   const adm=p=>p.admin||(p.cur?(b.admin||''):'');
@@ -583,6 +612,7 @@ function vExtra(b,C){
     ...((b.preguntasExtra)||[])];
   return help('extra')+kp+
    `<div class="card"><div class="card-h"><div><h2>Obra de cámaras: cronología para el reclamo</h2><p class="lead">Todo lo vinculado a la obra, mes a mes: lo que tiene factura, lo que se cobró como ordinario y lo que se pagó por fuera de la liquidación.</p></div><button class="btn noprint" id="pdfExtra">PDF del informe</button></div>${tCrono}</div>
+   ${(b.presupuestos||[]).length?`<h2 style="font-size:16px;margin:26px 0 12px">Presupuestos contra lo pagado ${qi('extra')}</h2>`+presupuestosHTML(b,S):''}
    <div class="two"><div class="card"><h2>Proveedores de la obra</h2><p class="lead">Solo ítems con factura vinculados a la obra.</p><div class="bars">${Object.entries(prv).sort((a,c2)=>c2[1]-a[1]).map(([k,v])=>`<div class="br"><div>${esc(k)}</div><div class="track"><div class="fill b" style="width:${v/Math.max(...Object.values(prv))*100}%"></div></div><div class="amt">${money(v)}</div><div class="pc">${pct(v/sum(camSi))}</div></div>`).join('')}</div></div>
     <div class="card"><h2>Cuánto pagó cada lote</h2><p class="lead">Extraordinarios liquidados a cada unidad, todos los meses.</p>${tLote}</div></div>
    <div class="card"><h2>Extraordinarios mes a mes</h2><p class="lead">Cuánto se cobró, cuánto se gastó y cómo quedó el fondo.</p>${mes}</div>
@@ -729,6 +759,7 @@ document.addEventListener('input',e=>{const t=e.target,b=B();if(!b)return;const 
   else if(d.g!==undefined&&t.tagName!=='SELECT'){b.gastos[+d.g][d.f]=isM?(pv===''?0:pv):t.value;touch();soft();}
   else if(d.c!==undefined){b.cfg[d.c]=isM?pv:t.value;touch();soft();}
   else if(d.b!==undefined){b[d.b]=t.value;touch();soft();}
+  else if(d.pres!==undefined){if(pv!==null){b.presupuestos[+d.pres][d.pf]=pv===''?0:pv;touch();soft();}}
   else if(d.obs!==undefined){autosize(t);if(t.value)b.obs[d.obs]=t.value;else delete b.obs[d.obs];touch();}
   else if(d.hobs!==undefined){autosize(t);b.hist[+d.hobs].obs=t.value;touch();}
 });
@@ -746,8 +777,8 @@ document.addEventListener('click',e=>{const t=e.target,b=B();if(!b)return;
   if(t.dataset.delg!==undefined){b.gastos.splice(+t.dataset.delg,1);touch();render();}});
 let tmr;function soft(){clearTimeout(tmr);tmr=setTimeout(()=>{const a=document.activeElement,ds=a&&a.dataset?{...a.dataset}:{},id=a&&a.id,ss=a&&a.selectionStart,raw=a&&a.value;
   shell();$('view').innerHTML=viewHTML(D.view);after(D.view);
-  let q=null;const k=Object.keys(ds).find(x=>['u','g','c','b'].includes(x));
-  if(k)q=document.querySelector(`[data-${k}="${ds[k]}"]${ds.f?`[data-f="${ds.f}"]`:''}`);else if(id)q=$(id);
+  let q=null;const k=Object.keys(ds).find(x=>['u','g','c','b','pres'].includes(x));
+  if(k)q=document.querySelector(`[data-${k}="${ds[k]}"]${ds.f?`[data-f="${ds.f}"]`:''}${ds.pf?`[data-pf="${ds.pf}"]`:''}`);else if(id)q=$(id);
   if(q){if(raw!=null&&q.tagName==='INPUT')q.value=raw;q.focus();try{if(ss!=null)q.setSelectionRange(ss,ss);}catch(_){}}},600);}
 
 /* ---------- Barrio nuevo / cierre ---------- */
