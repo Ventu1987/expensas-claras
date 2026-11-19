@@ -5,6 +5,9 @@ App web para liquidar y controlar expensas de barrios cerrados chicos. Es un sol
 ## Qué hace
 
 - Rubros propios por barrio ("+ Nuevo rubro…" al cargar un gasto).
+- **El mes en pocas palabras**: al abrir el Resumen, la lectura del mes armada sola con los números (cuánto se gastó y contra el mes anterior, qué rubros explican la diferencia, cuánto paga un lote común, cobranza, plata en el banco y qué hay para revisar).
+- Estado de cuenta con **¿En qué se usa tu expensa?**: la parte del lote en cada rubro y la comparación con su expensa del mes anterior.
+- Gastos por rubro mes a mes con **desplegable por rubro**: un renglón por proveedor o concepto, y cada factura al pasar el mouse.
 - Resumen con composición del gasto, evolución mensual, indicadores clave y deuda por unidad.
 - Presupuestos contra lo pagado: cada presupuesto con sus ítems, la parte que le toca al barrio, los pagos vinculados (con factura, a confirmar y fuera de presupuesto) y el análisis de si dan los números.
 - Extraordinarias: lo cobrado y gastado como extraordinario mes a mes, cronología de una obra con lo facturado y lo pagado por fuera de la liquidación, cuánto pagó cada unidad, montos sin explicar y preguntas para reclamar (con PDF).
@@ -63,4 +66,5 @@ La clave protege la planilla: sin ella, la app web no lee ni escribe nada.
 
 - Sin conexión a la planilla, los datos quedan solo en el navegador. Usá "Copiar todo", en Configuración, como respaldo manual.
 - La vista previa de la app dentro de Claude no permite imprimir ni conectarse con Google. Las dos cosas funcionan en la versión publicada en GitHub Pages.
+- **Importante (versión actual):** `Code.gs` ahora guarda la marca "reclasificado" de los gastos y todo el detalle de los meses cerrados (administración, observaciones del período, comprobantes). Actualizalo en Apps Script como se explica abajo; si no, esos datos se pierden al traerlos desde la planilla.
 - Si cambiás `Code.gs`: pegá el código nuevo, ejecutá otra vez `setup` (agrega columnas nuevas sin borrar datos) y hacé **Implementar > Gestionar implementaciones > Editar > Nueva versión**. La URL sigue siendo la misma.

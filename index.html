@@ -94,6 +94,7 @@ label{display:block;font-size:12px;color:var(--mute);margin-bottom:4px;font-weig
 .st.ok{background:var(--okSoft);color:var(--ok)}.st.bad{background:var(--badSoft);color:var(--bad)}.st.warn{background:var(--warnSoft);color:var(--warn)}.st.info{background:var(--accSoft);color:var(--acc)}
 .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--accSoft);color:var(--acc)}.tag.b{background:var(--warnSoft);color:var(--warn)}
 tr.cur td{background:var(--accSoft)}
+.lectura{border-left:4px solid var(--acc)}.lect{margin:0;padding-left:20px;line-height:1.7;font-size:14px}.lect li{margin:2px 0}.lect li::marker{color:var(--acc)}
 /* Doña Rosa */
 .help{display:none;background:var(--help);border:1px solid var(--helpLine);color:var(--helpInk);border-radius:8px;padding:10px 12px;font-size:13px;margin:4px 0 12px}
 .help b{font-weight:700}
@@ -221,7 +222,7 @@ const HELP={
  controles:'Son <b>alarmas automáticas</b>. No quieren decir que haya un error: avisan dónde conviene pedir el comprobante o una explicación.',
  cuenta:'Lo que tiene que pagar un lote este mes, y de dónde sale cada peso.',
  estadisticas:'Todos los meses juntos: cómo evolucionó cada gasto, cuánto pagó un lote, quién debe hace meses y qué cosas no cierran entre un mes y otro.',
- extra:'Los <b>extraordinarios</b> son gastos fuera de lo común, como una obra. Acá se junta todo lo de la obra de cámaras: qué se cobró, a quién se le pagó, qué tiene factura y qué no, para poder reclamarlo.',
+ extra:'Los <b>extraordinarios</b> son gastos fuera de lo común, como una obra. Acá se junta todo lo de cada obra: qué se cobró, a quién se le pagó, qué tiene factura y qué no, para poder reclamarlo.',
  historial:'Todos los meses ya cerrados, para ver cómo vienen los gastos. Cada mes puede llevar una explicación de qué pasó.',
  morosidad:'<b>Morosidad</b>: qué parte de lo que había que pagar no se pagó. Si es 30%, de cada 100 pesos que se debían, 30 no entraron.',
  fondo:'El <b>fondo de reserva</b> es un ahorro que se separa todos los meses para imprevistos (un portón roto, una bomba quemada), así no hay que pedir plata extra de golpe.',
@@ -306,8 +307,9 @@ function controles(b,C){
   const sinc=b.gastos.filter(g=>!g.comp||/sin comprobante|ajuste|^factura$/i.test(g.comp));
   add(sinc.length?'warn':'ok','Respaldo documental',sinc.length?`${sinc.length} gasto(s) sin número de comprobante: ${sinc.map(g=>esc((g.prov||'').split('—')[0].trim())).join('; ')}.`:'Todos los gastos tienen comprobante.');
   const deud=C.rows.filter(r=>r.neto>1);
-  add(C.mora>0.1&&C.cobr>0?'warn':'ok','Morosidad',`${pct(C.mora)} del exigible: ${money(C.impago)} en ${deud.length} unidad(es)${deud.length?': '+deud.map(r=>esc(r.u.id)).join(', '):''}.`);
+  if(!C.cobr&&C.exig)add('info','Morosidad','Todavía no hay pagos cargados en Unidades: la morosidad se calcula cuando se carguen.');else add(C.mora>0.1?'warn':'ok','Morosidad',`${pct(C.mora)} del exigible: ${money(C.impago)} en ${deud.length} unidad(es)${deud.length?': '+deud.map(r=>esc(r.u.id)).join(', '):''}.`);
   add(num(c.fondo)>0?'ok':'warn','Fondo de reserva',num(c.fondo)>0?`${num(c.fondo)}% de ordinarias; acumulado ${money(C.fondoFin)}.`:'No se constituye fondo de reserva.');
+  if(num(c.fondo)>0&&C.fondoFin>1&&C.finO<C.fondoFin-1)add('warn','Fondo de reserva disponible',`El fondo ordinario cierra en ${money(C.finO)}, por debajo del fondo de reserva acumulado (${money(C.fondoFin)}): ${C.finO<0?'la reserva no está':'falta '+money(C.fondoFin-C.finO)+' de la reserva'} en la cuenta. Se usó para pagar gastos corrientes.`);
   const bank=b.gastos.filter(g=>g.rubro==='Gastos bancarios e impuestos').reduce((s,g)=>s+num(g.imp),0),hon=b.gastos.filter(g=>g.rubro==='Honorarios de administración').reduce((s,g)=>s+num(g.imp),0);
   if(C.A>0){add(bank/C.A>0.03?'warn':'ok','Gastos bancarios',`${money(bank)} = ${pct(bank/C.A)} de las ordinarias.`);add('info','Honorarios',`${money(hon)} = ${pct(hon/C.A)} de las ordinarias · ${money(b.ufs.length?hon/b.ufs.length:0)} por unidad.`);}
   if(C.prev&&C.prev.A)add(Math.abs(C.A/C.prev.A-1)>0.15?'warn':'ok','Variación de ordinarias',`${sg(C.A/C.prev.A-1)} contra ${perLabel(C.prev.periodo)}. Más de 15% debería explicarse.`);
@@ -363,7 +365,7 @@ function viewHTML(v){const b=B();switch(v){case'inicio':return vInicio();case'co
 function vInicio(){
   return help('inicio')+`<div class="bgrid">`+D.barrios.map(b=>{const C=calc(b),al=C.finE<-1||C.finO<-1;
     return `<div class="bcard" data-open="${b.id}"><h3>${esc(b.nombre)}</h3><div class="meta">${esc(b.zona||'')}${b.zona?' · ':''}${b.ufs.length} unidades · ${perLabel(b.cfg.periodo)}${b.admin?' · '+esc(b.admin):''}</div>
-    <div class="m"><div><span>Total liquidado</span><b>${money(C.total)}</b></div><div><span>Morosidad</span><b class="${C.mora>0.1?'up':''}">${pct(C.mora)}</b></div>
+    <div class="m"><div><span>Total liquidado</span><b>${money(C.total)}</b></div><div><span>Morosidad</span><b class="${C.cobr&&C.mora>0.1?'up':''}">${C.cobr?pct(C.mora):'—'}</b></div>
     <div><span>Caja al cierre</span><b>${money(C.finO+C.finE)}</b>${al?`<span class="up" style="font-size:11.5px">fondo ${C.finE<-1?'extraordinario':'ordinario'} negativo</span>`:''}</div><div><span>Actualizado</span><b>${b.updated?new Date(b.updated).toLocaleDateString('es-AR'):'—'}</b></div></div></div>`;}).join('')+
     `<div class="bcard new" data-new="1"><div class="row">${ic('plus')} Nuevo barrio</div></div></div>`;
 }
@@ -374,7 +376,7 @@ function kpis(b,C){
    kpi('Gastos ordinarios',money(C.A),vA===null?'':`<span class="${vA>0?'up':'down'}">${sg(vA)}</span> vs ${perLabel(C.prev.periodo)}`,'A')+
    kpi('Gastos extraordinarios',money(C.B),vB!==null?`<span class="${vB>0?'up':'down'}">${sg(vB)}</span> vs anterior`:(C.prev&&C.B?'el mes anterior no tuvo':''),'B')+
    kpi('Cobranza del mes',money(C.cobr),C.exig?pct(C.cobr/C.exig)+' de lo exigible':'')+
-   kpi('Morosidad',pct(C.mora),C.cobr?money(C.impago)+' impagos':'todavía sin pagos cargados','morosidad',C.mora>0.1&&C.cobr>0)+
+   kpi('Morosidad',C.cobr?pct(C.mora):'—',C.cobr?money(C.impago)+' impagos':'todavía sin pagos cargados','morosidad',C.mora>0.1&&C.cobr>0)+
    kpi('Fondo ordinario',money(C.finO),'saldo al cierre','caja',C.finO<-1)+
    kpi('Fondo extraordinario',money(C.finE),C.finE<-1?'negativo: se usa plata ordinaria':'saldo al cierre','B',C.finE<-1)+`</div>`;
 }
@@ -429,15 +431,33 @@ function deudores(b,C){
   if(!d.length)return '<p class="muted">No hay unidades con deuda del mes anterior.</p>';
   return `<div class="bars">${d.map(r=>`<div class="br"><div>${esc(r.u.id)}${r.u.prop?` <span class="muted">· ${esc(r.u.prop)}</span>`:''}</div><div class="track"><div class="fill neg" style="width:${r.neto/mx*100}%"></div></div><div class="amt">${money(r.neto)}</div><div class="pc">${pct(r.neto/tot)}</div></div>`).join('')}</div><p class="lead mt">Total adeudado: <b>${money(tot)}</b> · intereses del mes: ${money(C.intT)}</p>`;
 }
+function lecturaMes(b,C){
+  // El mes contado en lenguaje simple, armado solo con los números: lo primero que lee un propietario.
+  const P=[],pv=C.prev,tg=C.A+C.B,pt=pv?num(pv.A)+num(pv.B):null,d=pt!=null?tg-pt:null;
+  if(!tg)return '';
+  P.push(`Este mes se gastaron <b>${money(tg)}</b>${C.B?` (${money(C.A)} ordinarios y ${money(C.B)} extraordinarios)`:''}${pt?`, ${Math.abs(d)<pt*0.005?'prácticamente lo mismo que':d>0?`<span class="up">${money(d)} más (${sg(tg/pt-1)})</span> que`:`<span class="down">${money(-d)} menos (${sg(tg/pt-1)})</span> que`} en ${perLabel(pv.periodo)}`:''}.`);
+  if(pv&&pv.rubros&&pt){const rs=[...new Set([...Object.keys(C.rub),...Object.keys(pv.rubros)])].map(r=>[r,((C.rub[r]?.A||0)+(C.rub[r]?.B||0))-num(pv.rubros[r])]).filter(x=>Math.abs(x[1])>Math.max(1000,pt*0.01)).sort((a,c)=>Math.abs(c[1])-Math.abs(a[1])).slice(0,3);
+    if(rs.length)P.push(`Lo que más movió el total: ${rs.map(([r,x])=>`<b>${esc(r)}</b> <span class="${x>0?'up':'down'}">${x>0?'+':'−'}${money(Math.abs(x)).replace('−','')}</span>${b.obs[b.cfg.periodo+'|'+r]?` (${esc(b.obs[b.cfg.periodo+'|'+r])})`:''}`).join(' · ')}.`);}
+  const lc=loteComun(b,[{ufs:snapUfs(C)}]);if(lc){const r=C.rows.find(x=>x.u.id===lc.id),pu=pv&&(pv.ufs||[]).find(x=>x.id===lc.id),now=r.exp,ant=pu?num(pu.ord)+num(pu.ext):null;
+    P.push(`Un lote común (${esc(lc.id)}, ${pct(r.p)}) paga <b>${money(now)}</b> de expensa este mes${ant?`, ${Math.abs(now-ant)<ant*0.005?'igual que':now>ant?`<span class="up">${money(now-ant)} más</span> que`:`<span class="down">${money(ant-now)} menos</span> que`} el mes pasado`:''}, sin contar deudas ni intereses.`);}
+  const deu=C.rows.filter(r=>r.neto>1);
+  if(C.cobr)P.push(`Se cobraron <b>${money(C.cobr)}</b>, el ${pct(C.exig?C.cobr/C.exig:null)} de lo que había que pagar. ${deu.length?`${deu.length} unidad(es) quedaron con deuda por ${money(C.impago)}.`:'Ninguna unidad quedó debiendo.'}`);
+  else P.push('Todavía no se cargaron los pagos del mes.');
+  P.push(`En el banco quedan <b>${money(C.finO+C.finE)}</b>: ${money(C.finO)} del fondo ordinario${C.finE||C.cajaE?` y ${money(C.finE)} del extraordinario`:''}${C.fondoFin>1?(C.finO>=C.fondoFin-1?` (lo ordinario incluye ${money(C.fondoFin)} de fondo de reserva)`:` (el fondo de reserva acumulado, ${money(C.fondoFin)}, no está entero en la cuenta)`):''}.${C.finO<-1||C.finE<-1?' <span class="up">Hay un fondo en negativo: se está usando plata de otro fondo.</span>':''}`);
+  const ct=controles(b,C),bad=ct.filter(x=>x.st==='bad'),warn=ct.filter(x=>x.st==='warn');
+  P.push(bad.length||warn.length?`Para revisar: ${[...bad,...warn].map(x=>x.t.toLowerCase()).join(', ')}. El detalle de cada punto está en Controles.`:'Todos los controles automáticos dan bien.');
+  return `<ul class="lect">${P.map(t=>`<li>${t}</li>`).join('')}</ul>`;
+}
 function vResumen(b,C){
   const rs=Object.entries(C.rub).map(([r,x])=>[r,x.A+x.B,x.B>0]).sort((a,c)=>c[1]-a[1]),mx=Math.max(...rs.map(x=>Math.abs(x[1])),1),tg=C.A+C.B;
   const ct=controles(b,C).filter(x=>x.st==='bad'||x.st==='warn');
   const obsT=b.obs[b.cfg.periodo+'|__total'];
-  return help('resumen')+kpis(b,C)+
+  const lm=lecturaMes(b,C);
+  return help('resumen')+(lm?`<div class="card lectura"><h2>El mes en pocas palabras</h2><p class="lead">Armado automáticamente con los números de la liquidación.</p>${lm}${obsT?`<p class="mt" style="font-size:13.5px"><b>Comentario de la administración:</b> ${esc(obsT)}</p>`:''}</div>`:'')+kpis(b,C)+
   `<div class="two"><div class="card"><h2>¿En qué se gasta? ${qi('rubros')}</h2><p class="lead">Gastos del mes por rubro, de mayor a menor.</p>
    <div class="legend"><span><i style="background:var(--c1)"></i>Ordinarios</span>${C.B?'<span><i style="background:var(--c2)"></i>Extraordinarios</span>':''}<span><i style="background:var(--bad)"></i>Créditos / negativos</span></div>
    <div class="bars">${rs.map(([r,t,isB])=>`<div class="br"><div>${esc(r)}</div><div class="track"><div class="fill ${t<0?'neg':isB?'b':''}" style="width:${Math.abs(t)/mx*100}%"></div></div><div class="amt">${money(t)}</div><div class="pc">${tg?pct(t/tg):''}</div></div>`).join('')}</div>
-   ${obsT?`<p class="mt" style="font-size:13px"><b>Lectura del mes:</b> ${esc(obsT)}</p>`:''}</div>
+</div>
    <div class="card"><h2>Para revisar ${qi('controles')}</h2><p class="lead">Alertas automáticas del período.</p>${ct.length?`<table><tbody>${ct.slice(0,7).map(x=>`<tr><td style="width:84px"><span class="st ${x.st}">${x.st==='bad'?'Revisar':'Atención'}</span></td><td><b>${x.t}</b><br><span class="muted" style="font-size:12.5px">${x.r}</span></td></tr>`).join('')}</tbody></table>${ct.length>7?`<p class="lead mt">y ${ct.length-7} más.</p>`:''}`:'<p class="muted">Sin alertas.</p>'}<div class="mt"><a class="btn ghost noprint" data-v="controles">Ver todos los controles</a></div></div></div>
   <div class="two"><div class="card"><h2>Evolución mensual</h2><p class="lead">Ordinario y extraordinario de cada mes. Cambiá a "Un lote común" para ver lo que le tocó pagar a un lote.</p>${chartEvol(b,C,serieFull(b,C).slice(-12))}</div>
    <div class="card"><h2>Indicadores clave</h2><p class="lead">Los números que conviene mirar todos los meses.</p>${indicadores(b,C)}</div></div>
@@ -447,11 +467,12 @@ function bindTips(){const tip=$('tip');document.querySelectorAll('[data-tip]').f
 /* ---------- Estadísticas ---------- */
 function snapUfs(C){return C.rows.map(r=>({id:r.u.id,coef:r.p*100,saldo:num(r.u.saldo),pagos:num(r.u.pagos),deuda:r.cap,int:r.int,ord:r.ord+r.fr,ext:r.ex,part:r.part,total:r.total}));}
 function serieFull(b,C){
-  const cur={periodo:b.cfg.periodo,cur:true,cobrosNoId:b.cfg.cobrosNoId||null,A:C.A,B:C.B,total:C.total,part:C.partT,cobranza:C.cobr,mora:C.mora,cajaOrd:C.finO,cajaExt:C.finE,cajaIniOrd:C.cajaO,cajaIniExt:C.cajaE,
-    rubros:Object.fromEntries(Object.entries(C.rub).map(([k,x])=>[k,x.A+x.B])),gastos:b.gastos.map(g=>({rubro:g.rubro,prov:g.prov,tipo:g.tipo,imp:num(g.imp),pend:!!g.pend})),ufs:snapUfs(C)};
+  const cur={periodo:b.cfg.periodo,cur:true,cobrosNoId:b.cfg.cobrosNoId||null,A:C.A,B:C.B,total:C.total,part:C.partT,cobranza:C.cobr,mora:C.cobr?C.mora:null,cajaOrd:C.finO,cajaExt:C.finE,cajaIniOrd:C.cajaO,cajaIniExt:C.cajaE,
+    rubros:Object.fromEntries(Object.entries(C.rub).map(([k,x])=>[k,x.A+x.B])),gastos:b.gastos.map(gSnap),ufs:snapUfs(C),admin:b.admin||''};
   return [...b.hist,cur];
 }
-const mlab=p=>{const l=perLabel(p).split(' ');return (l[0]||'').slice(0,3)+' '+(l[1]||'').slice(2);};
+const gSnap=g=>({fecha:g.fecha||'',rubro:g.rubro||'Otros',prov:g.prov||'',comp:g.comp||'',tipo:g.tipo==='B'?'B':'A',imp:num(g.imp),pend:!!g.pend,...(g.reclas?{reclas:true}:{})});
+const mlab=p=>{if(!/^\d{4}-\d{2}/.test(p||''))return String(p||'').replace(/[()]/g,'');const l=perLabel(p).split(' ');return (l[0]||'').slice(0,3)+' '+(l[1]||'').slice(2);};
 function lineChart(labels,series,fmtV,opt={}){
   const W=680,H=(opt.h||270)+(opt.totals?22:0),pl=64,pr=34,pt=26,pb=opt.totals?52:30,iw=W-pl-pr,ih=H-pt-pb,all=series.flatMap(s=>s.vals.filter(v=>v!=null));
   let mn=Math.min(0,...all),mx=Math.max(...all,1);if(mx===mn)mx=mn+1;const pad=(mx-mn)*.08;mx+=pad;if(mn<0)mn-=pad;
@@ -502,7 +523,9 @@ function vEstadisticas(b,C){
   // rubros x meses
   const rubs=[...new Set(S.flatMap(p=>Object.keys(p.rubros||{})))].sort((a,c)=>S.reduce((s,p)=>s+num((p.rubros||{})[c]),0)-S.reduce((s,p)=>s+num((p.rubros||{})[a]),0));
   const cell=(p,q,r)=>{const v=p.rubros?num(p.rubros[r]):null,pv=q&&q.rubros?num(q.rubros[r]):null;if(v==null)return '<td class="n muted">—</td>';
-    const vr=pv?v/pv-1:null;return `<td class="n">${v?fmt(v):'<span class="muted">0</span>'}${vr!=null&&Math.abs(vr)>=0.005?`<br><span class="${vr>0?'up':'down'}" style="font-size:11px">${sg(vr)}</span>`:''}</td>`;};
+    // variación: en % si es razonable; si el mes anterior era casi cero o negativo, en pesos (un "+140.959%" no le dice nada a nadie)
+    const vr=pv?v/pv-1:null,vt=vr==null||Math.abs(vr)<0.005?'':(pv<0||Math.abs(vr)>5)?(v>pv?'+':'−')+abbr(Math.abs(v-pv)).replace('$ ','$ '):sg(vr);
+    return `<td class="n">${v?fmt(v):'<span class="muted">0</span>'}${vt?`<br><span class="${v>pv?'up':'down'}" style="font-size:11px">${vt}</span>`:''}</td>`;};
   const tabla=`<div class="tw"><table><thead><tr><th>Rubro</th>${L.map((l,i)=>`<th class="n">${mlab(l)}${S[i].cur?' *':''}</th>`).join('')}<th class="n">Total</th><th class="n">Promedio</th><th class="n">% del total</th></tr></thead><tbody>`+
     rubs.map(r=>{const vals=S.map(p=>num((p.rubros||{})[r])),t=vals.reduce((a,c)=>a+c,0),m=conG.length?conG.reduce((a,p)=>a+num((p.rubros||{})[r]),0)/conG.length:0;
       const ri=rubs.indexOf(r),open=(window._rubOpen||new Set()).has(r);
@@ -513,7 +536,7 @@ function vEstadisticas(b,C){
       const subs=Object.entries(det).sort((a,c)=>Math.abs(c[1].v.reduce((x,y)=>x+y,0))-Math.abs(a[1].v.reduce((x,y)=>x+y,0))).map(([k,d])=>{const st=d.v.reduce((x,y)=>x+y,0),sm=conG.length?conG.reduce((a,p)=>a+d.v[S.indexOf(p)],0)/conG.length:0;
         return `<tr class="rsub" data-rp="${ri}" ${open?'':'hidden'}><td class="nw">${esc(k)}</td>${d.v.map((v,i)=>!d.c[i].length?'<td class="n muted">·</td>':`<td class="n" data-tip="${esc('<b>'+esc(k)+' · '+perLabel(S[i].periodo)+'</b>'+d.c[i].map(g=>'<br>'+esc(g.prov)+' — <b>'+money(g.imp)+'</b>'+(g.tipo==='B'?' (extraord.)':'')+(g.pend?' (sin explicar)':'')).join(''))}">${fmt(v)}${d.c[i].length>1?`<br><span class="muted" style="font-size:10.5px">${d.c[i].length} facturas</span>`:''}</td>`).join('')}<td class="n">${fmt(st)}</td><td class="n">${fmt(sm)}</td><td class="n">${pct(st/(totA+totB||1))}</td></tr>`;}).join('');
       return `<tr class="rub${open?' open':''}" data-ri="${ri}" data-rn="${esc(r)}" title="Ver el detalle de ${esc(r)}"><td class="nw"><span class="car">▸</span>${esc(r)} <span class="muted" style="font-size:11px">(${Object.keys(det).filter(x=>x!=='Sin detalle cargado').length||'—'})</span></td>${S.map((p,i)=>cell(p,S[i-1],r)).join('')}<td class="n"><b>${fmt(t)}</b></td><td class="n">${fmt(m)}</td><td class="n">${pct(t/(totA+totB||1))}</td></tr>`+subs;}).join('')+
-    `</tbody><tfoot><tr><td>Total</td>${S.map(p=>`<td class="n">${fmt(num(p.A)+num(p.B))}</td>`).join('')}<td class="n">${fmt(totA+totB)}</td><td class="n">${fmt(conG.length?conG.reduce((a,p)=>a+num(p.A)+num(p.B),0)/conG.length:0)}</td><td class="n">100,00%</td></tr></tfoot></table></div><p class="lead mt">* mes en curso. Debajo de cada monto, la variación contra el mes anterior. Tocá un rubro para ver en qué se gastó: un renglón por proveedor o concepto (pasá el mouse por un monto para ver cada factura).</p>`;
+    `</tbody><tfoot><tr><td>Total</td>${S.map(p=>`<td class="n">${fmt(num(p.A)+num(p.B))}</td>`).join('')}<td class="n">${fmt(totA+totB)}</td><td class="n">${fmt(conG.length?conG.reduce((a,p)=>a+num(p.A)+num(p.B),0)/conG.length:0)}</td><td class="n">100,00%</td></tr></tfoot></table></div><p class="lead mt">* mes en curso. Debajo de cada monto, la variación contra el mes anterior (en pesos cuando el mes anterior era casi cero). Tocá un rubro para ver en qué se gastó: un renglón por proveedor o concepto (pasá el mouse por un monto para ver cada factura).</p>`;
   // proveedores
   const prov={};S.forEach(p=>(p.gastos||[]).forEach(g=>{if(g.pend)return;const k=titleCase(provKey(g.prov));prov[k]=(prov[k]||0)+num(g.imp);}));
   const pv=Object.entries(prov).sort((a,c)=>c[1]-a[1]).slice(0,10),pmx=Math.max(...pv.map(x=>Math.abs(x[1])),1),ptot=Object.values(prov).reduce((a,c)=>a+c,0);
@@ -609,19 +632,19 @@ function vExtra(b,C){
   const pf=b.pagosFuera||[];
   pf.filter(x=>x.cam!=='No').forEach(x=>crono.push({fact:false,per:x.periodo,adm:'',prov:x.concepto,con:x.nota||'',comp:'—',imp:num(x.imp),como:'Pagado por fuera de la liquidación (fondo '+x.fondo.toLowerCase()+')',cam:x.cam}));
   crono.sort((a,c2)=>a.per.localeCompare(c2.per));
-  const camSi=crono.filter(x=>x.fact),camOtro=crono.filter(x=>!x.fact);
+  const camSi=crono.filter(x=>x.fact),camOtro=crono.filter(x=>!x.fact),obra=b.obra||(crono.some(x=>x.cam==='Sí')?'Obra de cámaras':'Obras y extraordinarios');
   const sum=a=>a.reduce((s,x)=>s+x.imp,0);
   const sinExp=S.flatMap(p=>(p.gastos||[]).filter(g=>g.pend).map(g=>({per:p.periodo,imp:num(g.imp),con:g.prov})));
   // por lote
   const ids=b.ufs.map(u=>u.id);const perLote=ids.map(id=>({id,v:S.reduce((a,p)=>{const u=(p.ufs||[]).find(x=>x.id===id);return a+(u?num(u.ext):0);},0)}));
   const kp=`<div class="kpis">`+kpi('Cobrado como extraordinario',money(totExt),'lo que se liquidó a los propietarios como extraordinario')+
     kpi('Inversión cobrada como ordinaria',money(totRec),'reclasificado o sin explicar','B',totRec>0)+
-    kpi('Obra de cámaras: gastos con factura',money(sum(camSi)),`${camSi.length} ítems identificados`)+
+    kpi(esc(obra)+': gastos con factura',money(sum(camSi)),`${camSi.length} ítems identificados`)+
     kpi('Pagos a confirmar',money(sum(camOtro)),`${camOtro.length} ítems sin comprobante o sin detalle`,null,camOtro.length>0)+
     kpi('Fondo extraordinario hoy',money(C.finE),C.finE<-1?'negativo: se usó plata ordinaria':'','caja',C.finE<-1)+`</div>`;
   const mes=`<div class="tw"><table><thead><tr><th>Período</th><th>Administración</th><th class="n">Cobrado como extraordinario</th><th class="n">Inversión cobrada como ordinaria</th><th class="n">Gastos extraordinarios liquidados</th><th class="n">Fondo extraordinario al cierre</th><th style="min-width:240px">Qué pasó</th></tr></thead><tbody>`+
     rows.map(r=>`<tr class="${r.p.cur?'cur':''}"><td class="nw">${perLabel(r.p.periodo)}${r.p.cur?' <span class="tag">en curso</span>':''}</td><td class="nw" style="font-size:12px">${esc(adm(r.p))}</td><td class="n">${fmt(r.orig)}</td><td class="n">${r.rec?fmt(r.rec):'<span class="muted">0</span>'}</td><td class="n">${fmt(r.gast)}</td><td class="n">${r.fondo==null?'<span class="muted" title="La administración anterior no separaba fondos">—</span>':fmt(r.fondo)}</td><td style="font-size:12px">${esc(r.p.cur?(b.obs[c.periodo+'|__total']||''):(r.p.obs||''))}</td></tr>`).join('')+
-    `</tbody><tfoot><tr><td colspan="2">Total</td><td class="n">${fmt(totExt)}</td><td class="n">${fmt(totRec)}</td><td class="n">${fmt(totG)}</td><td></td><td></td></tr></tfoot></table></div><p class="lead mt">Hasta abril la administración anterior manejaba una sola cuenta, sin separar el fondo extraordinario.</p>`;
+    `</tbody><tfoot><tr><td colspan="2">Total</td><td class="n">${fmt(totExt)}</td><td class="n">${fmt(totRec)}</td><td class="n">${fmt(totG)}</td><td></td><td></td></tr></tfoot></table></div>${rows.some(r=>r.fondo==null||r.fondo==='')?'<p class="lead mt">"—" en el fondo extraordinario: ese mes la administración no separaba el fondo extraordinario del ordinario (una sola cuenta).</p>':''}`;
   const tCrono=`<div class="tw"><table><thead><tr><th>Período</th><th>Proveedor</th><th style="min-width:280px">Concepto / observación</th><th>Comprobante</th><th>Cómo se cobró o pagó</th><th>¿Es de la obra?</th><th class="n">Importe</th></tr></thead><tbody>`+
     crono.map(x=>`<tr><td class="nw">${perLabel(x.per)}</td><td style="font-size:12.5px">${esc(x.prov)}</td><td style="font-size:12px">${esc(x.con)}</td><td class="nw" style="font-size:12px">${esc(x.comp)}</td><td style="font-size:12px">${esc(x.como)}</td><td><span class="st ${x.cam==='Sí'?'info':x.cam==='?'?'bad':'warn'}">${esc(x.cam)}</span></td><td class="n">${fmt(x.imp)}</td></tr>`).join('')+
     `</tbody><tfoot><tr><td colspan="6">Con factura en las liquidaciones</td><td class="n">${fmt(sum(camSi))}</td></tr><tr><td colspan="6">Pagados por fuera de la liquidación, a confirmar</td><td class="n">${fmt(sum(camOtro))}</td></tr><tr><td colspan="6">Total a pedir explicación</td><td class="n">${fmt(sum(crono))}</td></tr></tfoot></table></div>`;
@@ -631,21 +654,21 @@ function vExtra(b,C){
   const prv={};camSi.forEach(x=>prv[x.prov]=(prv[x.prov]||0)+x.imp);
   const pfT=pf.reduce((a,x)=>a+num(x.imp),0),recIt=S.flatMap(p=>(p.gastos||[]).filter(g=>g.reclas).map(g=>({per:p.periodo,g})));
   const preg=[
-    `¿Cuál fue el presupuesto total aprobado para la obra, quién lo aprobó y en qué asamblea? Con factura hay identificados ${money(sum(camSi))}${camOtro.length?`, y otros ${money(sum(camOtro))} figuran sin comprobante o sin detalle`:''}.`,
+    ...(crono.length?[`¿Cuál fue el presupuesto total aprobado para ${obra==='Obras y extraordinarios'?'cada obra':'la obra'}, quién lo aprobó y en qué asamblea? Con factura hay identificados ${money(sum(camSi))}${camOtro.length?`, y otros ${money(sum(camOtro))} figuran sin comprobante o sin detalle`:''}.`]:[]),
     ...(recIt.length?[`¿Por qué se cobraron como ordinarios gastos de inversión? ${recIt.map(x=>`${titleCase(provKey(x.g.prov))} ${money(x.g.imp)} (${perLabel(x.per)})`).join('; ')}.`]:[]),
-    ...sinExp.map(x=>`${perLabel(x.per)}: ${x.con}. ¿A qué corresponden esos ${money(x.imp)}?`),
+    ...sinExp.map(x=>`${perLabel(x.per)}: ${esc(x.con)}. ¿A qué corresponden esos ${money(x.imp)}?`),
     ...(pf.length?[`Se pagaron ${money(pfT)} por fuera de la liquidación, sin prorratearlos como gasto. Pedir facturas y órdenes de pago de cada uno.`]:[]),
     ...(C.finE<-1?[`El fondo extraordinario está en ${money(C.finE)}: ¿con qué plata se cubrió la diferencia y quién lo autorizó?`]:[]),
-    ...((b.preguntasExtra)||[])];
+    ...((b.preguntasExtra)||[]).map(esc)];
   return help('extra')+kp+
-   `<div class="card"><div class="card-h"><div><h2>Obra de cámaras: cronología para el reclamo</h2><p class="lead">Todo lo vinculado a la obra, mes a mes: lo que tiene factura, lo que se cobró como ordinario y lo que se pagó por fuera de la liquidación.</p></div><button class="btn noprint" id="pdfExtra">PDF del informe</button></div>${tCrono}</div>
+   `<div class="card"><div class="card-h"><div><h2>${esc(obra)}: cronología para el reclamo</h2><p class="lead">Todo lo vinculado a la obra, mes a mes: lo que tiene factura, lo que se cobró como ordinario y lo que se pagó por fuera de la liquidación.</p></div><button class="btn noprint" id="pdfExtra">PDF del informe</button></div>${tCrono}</div>
    ${(b.presupuestos||[]).length?`<h2 style="font-size:16px;margin:26px 0 12px">Presupuestos contra lo pagado ${qi('extra')}</h2>`+presupuestosHTML(b,S):''}
    <div class="two"><div class="card"><h2>Proveedores de la obra</h2><p class="lead">Solo ítems con factura vinculados a la obra.</p><div class="bars">${Object.entries(prv).sort((a,c2)=>c2[1]-a[1]).map(([k,v])=>`<div class="br"><div>${esc(k)}</div><div class="track"><div class="fill b" style="width:${v/Math.max(...Object.values(prv))*100}%"></div></div><div class="amt">${money(v)}</div><div class="pc">${pct(v/sum(camSi))}</div></div>`).join('')}</div></div>
     <div class="card"><h2>Cuánto pagó cada lote</h2><p class="lead">Extraordinarios liquidados a cada unidad, todos los meses.</p>${tLote}</div></div>
    <div class="card"><h2>Extraordinarios mes a mes</h2><p class="lead">Cuánto se cobró, cuánto se gastó y cómo quedó el fondo.</p>${mes}</div>
    <div class="card"><h2>Pagos por fuera de la liquidación</h2><p class="lead">Egresos del banco que no se prorratearon como gasto.</p>${tPf}</div>
    ${sinExp.length?`<div class="card"><h2>Montos sin explicar</h2><table><tbody>${sinExp.map(x=>`<tr><td class="nw">${perLabel(x.per)}</td><td>${esc(x.con)}</td><td class="n">${fmt(x.imp)}</td></tr>`).join('')}</tbody></table></div>`:''}
-   <div class="card"><h2>Preguntas para el reclamo</h2><p class="lead">Armadas con los datos de las liquidaciones. Conviene enviarlas por escrito y pedir respuesta con documentación.</p><ol style="margin:0;padding-left:20px;line-height:1.7;font-size:13.5px">${preg.map(q=>`<li>${q}</li>`).join('')}</ol><div class="row mt noprint"><button class="btn ghost" id="copyPreg">Copiar preguntas</button></div></div>`;
+   <div class="card"><h2>Preguntas para el reclamo</h2><p class="lead">Armadas con los datos de las liquidaciones. Conviene enviarlas por escrito y pedir respuesta con documentación.</p>${preg.length?`<ol style="margin:0;padding-left:20px;line-height:1.7;font-size:13.5px">${preg.map(q=>`<li>${q}</li>`).join('')}</ol>`:'<p class="muted">No hay temas pendientes para reclamar.</p>'}<div class="row mt noprint"><button class="btn ghost" id="copyPreg">Copiar preguntas</button></div></div>`;
 }
 function vUnidades(b,C){
   const sum=f=>b.ufs.reduce((s,u)=>s+num(u[f]),0);
@@ -703,7 +726,10 @@ function vControles(b,C){
 }
 function reciboHTML(b,C,i){const r=C.rows[i];if(!r)return'';const c=b.cfg;
   const L=[['Saldo anterior',num(r.u.saldo)],['− Pagos registrados',num(r.u.pagos)?-num(r.u.pagos):0],[`+ Interés por mora (${nl(c.interes)}% sobre ${money(r.cap)})`,r.int],['+ Expensas ordinarias',r.ord],...(r.fr?[['+ Fondo de reserva',r.fr]]:[]),['+ Expensas extraordinarias',r.ex],...(r.part?[['+ Gastos particulares',r.part]]:[])];
-  return `<div class="card recibo"><h2>${esc(b.nombre)} · ${esc(r.u.id)}</h2><p class="lead">${r.u.prop?'Propietario: '+esc(r.u.prop)+' · ':''}${perLabel(c.periodo)} · Vence ${c.venc?c.venc.split('-').reverse().join('/'):'—'} · Coeficiente ${pct(r.p)}</p><table><tbody>${L.map(([t,v])=>`<tr><td>${t}</td><td class="n">${money(v)}</td></tr>`).join('')}</tbody><tfoot><tr><td>Total a pagar</td><td class="n">${money(r.total)}</td></tr></tfoot></table>${r.ref!==null?`<p class="lead mt">Según la administración: ${money(r.ref)} (diferencia ${money(r.dif)}).</p>`:''}</div>`;}
+  const rs=Object.entries(C.rub).map(([k,x])=>[k,(x.A+x.B)*r.p]).filter(x=>Math.abs(x[1])>=1).sort((a,c)=>c[1]-a[1]),tu=rs.reduce((a,x)=>a+x[1],0);
+  const pu=C.prev&&(C.prev.ufs||[]).find(x=>x.id===r.u.id),ant=pu?num(pu.ord)+num(pu.ext):null;
+  const uso=rs.length?`<h3 style="font-size:13.5px;margin:16px 0 6px">¿En qué se usa tu expensa?</h3><p class="lead">Tu parte (${pct(r.p)}) de cada rubro del mes.${ant?` Tu expensa del mes (sin deudas ni intereses) es ${money(r.exp)}; el mes pasado fue ${money(ant)} (${r.exp>=ant?'+':'−'}${money(Math.abs(r.exp-ant)).replace('−','')}).`:''}</p><table><tbody>${rs.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="n">${money(v)}</td><td class="n muted" style="width:70px">${tu?pct(v/tu):''}</td></tr>`).join('')}</tbody><tfoot>${r.fr?`<tr><td style="font-weight:400">+ Fondo de reserva (ahorro para imprevistos)</td><td class="n" style="font-weight:400">${money(r.fr)}</td><td></td></tr>`:''}<tr><td>Tu expensa del mes</td><td class="n">${money(tu+r.fr)}</td><td></td></tr></tfoot></table>`:'';
+  return `<div class="card recibo"><h2>${esc(b.nombre)} · ${esc(r.u.id)}</h2><p class="lead">${r.u.prop?'Propietario: '+esc(r.u.prop)+' · ':''}${perLabel(c.periodo)} · Vence ${c.venc?c.venc.split('-').reverse().join('/'):'—'} · Coeficiente ${pct(r.p)}</p><table><tbody>${L.map(([t,v])=>`<tr><td>${t}</td><td class="n">${money(v)}</td></tr>`).join('')}</tbody><tfoot><tr><td>Total a pagar</td><td class="n">${money(r.total)}</td></tr></tfoot></table>${r.ref!==null?`<p class="lead mt">Según la administración: ${money(r.ref)} (diferencia ${money(r.dif)}).</p>`:''}${uso}</div>`;}
 function vCuenta(b,C){const i=Math.min(window._uf||0,b.ufs.length-1);
   return help('cuenta')+`<div class="row noprint" style="margin-bottom:14px"><select id="ufPick" style="max-width:340px">${b.ufs.map((u,k)=>`<option value="${k}" ${k===i?'selected':''}>${esc(u.id)}${u.prop?' — '+esc(u.prop):''}</option>`).join('')}</select><button class="btn ghost" id="copyRec">Copiar texto para el propietario</button><button class="btn ghost" id="pdfAll">PDF de todos los estados de cuenta</button></div>`+reciboHTML(b,C,i);}
 function vHistorial(b,C){
@@ -830,7 +856,7 @@ function closePeriod(){
   modal(`<h3>Cerrar ${perLabel(c.periodo)}</h3><p>Se guarda la liquidación en el historial y se arma el mes siguiente:</p><ul style="margin:0 0 10px 18px;padding:0;font-size:13px;line-height:1.7"><li>El total a pagar de cada unidad pasa a ser su saldo anterior (los intereses quedan separados).</li><li>Pagos, particulares y gastos quedan en cero.</li><li>Los fondos ordinario (${money(C.finO)}) y extraordinario (${money(C.finE)}) pasan como saldo inicial.</li></ul>${Object.keys(C.rub).some(r=>!b.obs[c.periodo+'|'+r])?'<p class="help" style="display:block">Hay rubros sin observación. Conviene completarlos antes de cerrar.</p>':''}<div class="row mt" style="justify-content:flex-end"><button class="btn ghost" id="cpNo">Cancelar</button><button class="btn" id="cpOk">Cerrar período</button></div>`);
   $('cpNo').onclick=closeModal;
   $('cpOk').onclick=()=>{const rub={};Object.entries(C.rub).forEach(([k,v])=>rub[k]=v.A+v.B);
-    b.hist.push({periodo:c.periodo,cobrosNoId:c.cobrosNoId||null,gastos:b.gastos.map(g=>({rubro:g.rubro,prov:g.prov,tipo:g.tipo,imp:num(g.imp),pend:!!g.pend})),ufs:snapUfs(C),cajaIniOrd:C.cajaO,cajaIniExt:C.cajaE,A:C.A,B:C.B,fondo:C.fondo,part:C.partT,total:C.total,cobranza:C.cobr,mora:C.mora,cajaOrd:C.finO,cajaExt:C.finE,rubros:rub,obs:b.obs[c.periodo+'|__total']||''});
+    b.hist.push({periodo:c.periodo,admin:b.admin||'',obsPeriodo:c.obsPeriodo||'',venc:c.venc||'',interes:num(c.interes),cobrosNoId:c.cobrosNoId||null,gastos:b.gastos.map(gSnap),ufs:snapUfs(C),cajaIniOrd:C.cajaO,cajaIniExt:C.cajaE,A:C.A,B:C.B,fondo:C.fondo,part:C.partT,total:C.total,cobranza:C.cobr,mora:C.mora,cajaOrd:C.finO,cajaExt:C.finE,rubros:rub,obs:b.obs[c.periodo+'|__total']||''});
     C.rows.forEach(r=>{r.u.intPrev=Math.round(Math.max(Math.min(num(r.u.intPrev),r.neto),0)+r.int);r.u.saldo=Math.round(r.total);r.u.pagos=0;r.u.part=0;r.u.ref='';});
     c.cajaOrd=Math.round(C.finO*100)/100;c.cajaExt=Math.round(C.finE*100)/100;c.fondoacum=Math.round(C.fondoFin);
     Object.assign(c,{cobrExt:'',egrOrd:'',egrExt:'',saldoBanco:'',obsPeriodo:'',cobrosNoId:null});
@@ -860,8 +886,10 @@ function syncChip(){const ch=$('syncChip'),t=$('syncTxt');ch.className='chip'+(s
 const errMsg=e=>'No se pudo conectar ('+(e&&e.message||e)+'). Revisá la URL y la clave. Desde la vista previa de Claude no funciona: usá la app publicada en GitHub Pages.';
 async function apiGet(action){const u=D.api.url+(D.api.url.includes('?')?'&':'?')+'action='+action+'&token='+encodeURIComponent(D.api.token);const r=await fetch(u);return r.json();}
 async function apiPost(body){const r=await fetch(D.api.url,{method:'POST',body:JSON.stringify({...body,token:D.api.token})});return r.json();}
-function queueSync(b){if(!D.api.url||!D.api.auto)return;const target=b||B();if(!target)return;clearTimeout(syncT);setSync('saving');
-  syncT=setTimeout(async()=>{try{const r=await apiPost({action:'saveBarrio',barrio:target});setSync(r.ok?'ok':'bad');}catch(e){setSync('bad');}},1800);}
+const syncQ=new Set();
+function queueSync(b){if(!D.api.url||!D.api.auto)return;const target=b||B();if(!target)return;syncQ.add(target.id);clearTimeout(syncT);setSync('saving');
+  // se guardan todos los barrios con cambios pendientes, no solo el último que se tocó
+  syncT=setTimeout(async()=>{const ids=[...syncQ];syncQ.clear();let ok=true;for(const id of ids){const x=D.barrios.find(y=>y.id===id);if(!x)continue;try{const r=await apiPost({action:'saveBarrio',barrio:x});if(!r.ok){ok=false;syncQ.add(id);}}catch(e){ok=false;syncQ.add(id);}}setSync(ok?'ok':'bad');},1800);}
 function mergeRemote(list,force){let n=0;list.forEach(rb=>{const i=D.barrios.findIndex(x=>x.id===rb.id);if(i<0){D.barrios.push(rb);n++;}else if(force||(rb.updated&&(!D.barrios[i].updated||rb.updated>D.barrios[i].updated))){D.barrios[i]=rb;n++;}});if(!B()&&D.barrios[0])D.activeId=D.barrios[0].id;persist();return n;}
 async function autoLoad(){if(!D.api.url)return;try{const r=await apiGet('load');if(r.ok){const n=mergeRemote(r.barrios,false);setSync('ok');if(n){render();toast(n+' barrio(s) actualizados desde Google Sheets');}}else setSync('bad');}catch(e){setSync('bad');}}
 async function apiDelete(id){if(!D.api.url)return;try{await apiPost({action:'deleteBarrio',id});}catch(e){}}

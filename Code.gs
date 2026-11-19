@@ -21,7 +21,7 @@ const SHEETS = {
             'saldo_banco', 'observaciones_periodo', 'actualizado', 'rubros_propios', 'cobros_no_identificados', 'pagos_fuera_json', 'alias_proveedores_json', 'preguntas_json', 'presupuestos_json'],
   Unidades: ['barrio_id', 'orden', 'unidad', 'propietario', 'coeficiente', 'saldo_anterior', 'intereses_en_saldo',
              'pagos', 'particulares', 'total_segun_admin'],
-  Gastos: ['barrio_id', 'periodo', 'orden', 'fecha', 'rubro', 'proveedor_concepto', 'comprobante', 'tipo', 'importe', 'falta_explicar'],
+  Gastos: ['barrio_id', 'periodo', 'orden', 'fecha', 'rubro', 'proveedor_concepto', 'comprobante', 'tipo', 'importe', 'falta_explicar', 'reclasificado'],
   Historial: ['barrio_id', 'orden', 'periodo', 'nota', 'ordinarios', 'extraordinarios', 'fondo_reserva', 'particulares',
               'total', 'cobranza', 'morosidad', 'caja_ord_cierre', 'caja_ext_cierre', 'rubros_json', 'observacion', 'detalle_json'],
   Observaciones: ['barrio_id', 'periodo', 'rubro', 'texto']
@@ -78,12 +78,17 @@ function saveBarrio(b) {
   append('Barrios', [[b.id, b.nombre, b.zona || '', b.admin || '', c.cuit || '', c.periodo || '', c.venc || '', c.fondo, c.interes,
     c.cajaOrd, c.cajaExt, c.fondoacum, c.cobrExt, c.egrOrd, c.egrExt, c.saldoBanco, c.obsPeriodo || '', b.updated || new Date().toISOString(), JSON.stringify(b.rubros || []), c.cobrosNoId ? JSON.stringify(c.cobrosNoId) : '', JSON.stringify(b.pagosFuera || []), JSON.stringify(b.alias || {}), JSON.stringify(b.preguntasExtra || []), JSON.stringify(b.presupuestos || [])]]);
   append('Unidades', (b.ufs || []).map((u, i) => [b.id, i + 1, u.id, u.prop || '', u.coef, u.saldo, u.intPrev, u.pagos, u.part, u.ref]));
-  append('Gastos', (b.gastos || []).map((g, i) => [b.id, c.periodo || '', i + 1, g.fecha || '', g.rubro || '', g.prov || '', g.comp || '', g.tipo || 'A', g.imp, g.pend ? 'SI' : '']));
+  append('Gastos', (b.gastos || []).map((g, i) => [b.id, c.periodo || '', i + 1, g.fecha || '', g.rubro || '', g.prov || '', g.comp || '', g.tipo || 'A', g.imp, g.pend ? 'SI' : '', g.reclas ? 'SI' : '']));
   append('Historial', (b.hist || []).map((h, i) => [b.id, i + 1, h.periodo || '', h.nota || '', h.A, h.B, h.fondo, h.part, h.total, h.cobranza,
     h.mora, h.cajaOrd, h.cajaExt, h.rubros ? JSON.stringify(h.rubros) : '', h.obs || '',
-    JSON.stringify({ gastos: h.gastos || [], ufs: h.ufs || [], cajaIniOrd: h.cajaIniOrd, cajaIniExt: h.cajaIniExt, cobrosNoId: h.cobrosNoId || null })]));
+    JSON.stringify(detalle(h))]));
   append('Observaciones', Object.keys(b.obs || {}).map(k => { const i = k.indexOf('|'); return [b.id, k.slice(0, i), k.slice(i + 1), b.obs[k]]; }));
 }
+
+// Todo lo del mes cerrado que no tiene columna propia (gastos, unidades, administración, observaciones del período…)
+// va a detalle_json, así no se pierde nada al ir y volver de la planilla.
+const HIST_COLS = ['periodo', 'nota', 'A', 'B', 'fondo', 'part', 'total', 'cobranza', 'mora', 'cajaOrd', 'cajaExt', 'rubros', 'obs'];
+function detalle(h) { const o = {}; Object.keys(h).forEach(k => { if (HIST_COLS.indexOf(k) < 0) o[k] = h[k]; }); return o; }
 
 function removeBarrio(id) {
   // Reescribe cada hoja sin las filas del barrio (más rápido que borrar fila por fila).
@@ -146,7 +151,7 @@ function loadAll() {
       ufs: U.filter(u => u.barrio_id === b.id).sort((a, c) => a.orden - c.orden).map(u => ({ id: String(u.unidad), prop: String(u.propietario || ''),
         coef: n(u.coeficiente), saldo: n(u.saldo_anterior), intPrev: n(u.intereses_en_saldo), pagos: n(u.pagos), part: n(u.particulares), ref: n(u.total_segun_admin) })),
       gastos: G.filter(g => g.barrio_id === b.id).sort((a, c) => a.orden - c.orden).map(g => ({ fecha: String(g.fecha || ''), rubro: String(g.rubro || ''),
-        prov: String(g.proveedor_concepto || ''), comp: String(g.comprobante || ''), tipo: String(g.tipo || 'A'), imp: Number(g.importe) || 0, pend: String(g.falta_explicar) === 'SI' })),
+        prov: String(g.proveedor_concepto || ''), comp: String(g.comprobante || ''), tipo: String(g.tipo || 'A'), imp: Number(g.importe) || 0, pend: String(g.falta_explicar) === 'SI', reclas: String(g.reclasificado) === 'SI' })),
       hist: H.filter(h => h.barrio_id === b.id).sort((a, c) => a.orden - c.orden).map(h => ({ periodo: String(h.periodo), nota: String(h.nota || ''),
         A: n(h.ordinarios), B: n(h.extraordinarios), fondo: n(h.fondo_reserva), part: h.particulares === '' ? null : n(h.particulares), total: n(h.total),
         cobranza: h.cobranza === '' ? null : n(h.cobranza), mora: h.morosidad === '' ? null : n(h.morosidad), cajaOrd: n(h.caja_ord_cierre),
