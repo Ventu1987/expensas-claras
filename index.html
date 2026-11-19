@@ -64,8 +64,11 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td.nw{white-space:nowrap}
 tfoot td{font-weight:700;border-top:2px solid var(--ink);border-bottom:none}
 tbody tr:hover td{background:var(--surface2)}
+tr.rub{cursor:pointer}tr.rub .car{display:inline-block;width:14px;color:var(--mute);transition:transform .15s}tr.rub.open .car{transform:rotate(90deg)}tr.rub.open td{border-bottom-color:transparent;font-weight:600}
+tr.rsub td{font-size:12px;background:var(--surface2);color:var(--ink);padding-top:5px;padding-bottom:5px}table tr.rsub td:first-child{padding-left:32px;max-width:280px;overflow:hidden;text-overflow:ellipsis}tr.rsub td[data-tip]{cursor:help}
 .tw{overflow:auto;max-height:620px;border:1px solid var(--line);border-radius:8px}
 .tw table th:first-child,.tw table td:first-child{padding-left:12px}
+.tw table tr.rsub td:first-child{padding-left:32px}
 input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:6px 8px;width:100%}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--accSoft);border-color:var(--acc)}
 input.n{text-align:right;font-variant-numeric:tabular-nums;min-width:96px}
@@ -502,8 +505,15 @@ function vEstadisticas(b,C){
     const vr=pv?v/pv-1:null;return `<td class="n">${v?fmt(v):'<span class="muted">0</span>'}${vr!=null&&Math.abs(vr)>=0.005?`<br><span class="${vr>0?'up':'down'}" style="font-size:11px">${sg(vr)}</span>`:''}</td>`;};
   const tabla=`<div class="tw"><table><thead><tr><th>Rubro</th>${L.map((l,i)=>`<th class="n">${mlab(l)}${S[i].cur?' *':''}</th>`).join('')}<th class="n">Total</th><th class="n">Promedio</th><th class="n">% del total</th></tr></thead><tbody>`+
     rubs.map(r=>{const vals=S.map(p=>num((p.rubros||{})[r])),t=vals.reduce((a,c)=>a+c,0),m=conG.length?conG.reduce((a,p)=>a+num((p.rubros||{})[r]),0)/conG.length:0;
-      return `<tr><td class="nw">${esc(r)}</td>${S.map((p,i)=>cell(p,S[i-1],r)).join('')}<td class="n"><b>${fmt(t)}</b></td><td class="n">${fmt(m)}</td><td class="n">${pct(t/(totA+totB||1))}</td></tr>`;}).join('')+
-    `</tbody><tfoot><tr><td>Total</td>${S.map(p=>`<td class="n">${fmt(num(p.A)+num(p.B))}</td>`).join('')}<td class="n">${fmt(totA+totB)}</td><td class="n">${fmt(conG.length?conG.reduce((a,p)=>a+num(p.A)+num(p.B),0)/conG.length:0)}</td><td class="n">100,00%</td></tr></tfoot></table></div><p class="lead mt">* mes en curso. Debajo de cada monto, la variación contra el mes anterior.</p>`;
+      const ri=rubs.indexOf(r),open=(window._rubOpen||new Set()).has(r);
+      // detalle: un renglón por proveedor/concepto, con lo gastado cada mes
+      const det={};S.forEach((p,i)=>(p.gastos||[]).forEach(g=>{if((g.rubro||'Otros')!==r)return;const k=titleCase(provKey(g.prov));const d=det[k]=det[k]||{v:S.map(()=>0),c:S.map(()=>[])};d.v[i]+=num(g.imp);d.c[i].push(g);}));
+      const resto=S.map((p,i)=>num((p.rubros||{})[r])-Object.values(det).reduce((a,d)=>a+d.v[i],0));
+      if(resto.some(v=>Math.abs(v)>1))det['Sin detalle cargado']={v:resto.map(v=>Math.abs(v)>1?v:0),c:resto.map(v=>Math.abs(v)>1?[{prov:'Ese mes se cargó el total del rubro, sin las facturas',imp:v}]:[])};
+      const subs=Object.entries(det).sort((a,c)=>Math.abs(c[1].v.reduce((x,y)=>x+y,0))-Math.abs(a[1].v.reduce((x,y)=>x+y,0))).map(([k,d])=>{const st=d.v.reduce((x,y)=>x+y,0),sm=conG.length?conG.reduce((a,p)=>a+d.v[S.indexOf(p)],0)/conG.length:0;
+        return `<tr class="rsub" data-rp="${ri}" ${open?'':'hidden'}><td class="nw">${esc(k)}</td>${d.v.map((v,i)=>!d.c[i].length?'<td class="n muted">·</td>':`<td class="n" data-tip="${esc('<b>'+esc(k)+' · '+perLabel(S[i].periodo)+'</b>'+d.c[i].map(g=>'<br>'+esc(g.prov)+' — <b>'+money(g.imp)+'</b>'+(g.tipo==='B'?' (extraord.)':'')+(g.pend?' (sin explicar)':'')).join(''))}">${fmt(v)}${d.c[i].length>1?`<br><span class="muted" style="font-size:10.5px">${d.c[i].length} facturas</span>`:''}</td>`).join('')}<td class="n">${fmt(st)}</td><td class="n">${fmt(sm)}</td><td class="n">${pct(st/(totA+totB||1))}</td></tr>`;}).join('');
+      return `<tr class="rub${open?' open':''}" data-ri="${ri}" data-rn="${esc(r)}" title="Ver el detalle de ${esc(r)}"><td class="nw"><span class="car">▸</span>${esc(r)} <span class="muted" style="font-size:11px">(${Object.keys(det).filter(x=>x!=='Sin detalle cargado').length||'—'})</span></td>${S.map((p,i)=>cell(p,S[i-1],r)).join('')}<td class="n"><b>${fmt(t)}</b></td><td class="n">${fmt(m)}</td><td class="n">${pct(t/(totA+totB||1))}</td></tr>`+subs;}).join('')+
+    `</tbody><tfoot><tr><td>Total</td>${S.map(p=>`<td class="n">${fmt(num(p.A)+num(p.B))}</td>`).join('')}<td class="n">${fmt(totA+totB)}</td><td class="n">${fmt(conG.length?conG.reduce((a,p)=>a+num(p.A)+num(p.B),0)/conG.length:0)}</td><td class="n">100,00%</td></tr></tfoot></table></div><p class="lead mt">* mes en curso. Debajo de cada monto, la variación contra el mes anterior. Tocá un rubro para ver en qué se gastó: un renglón por proveedor o concepto (pasá el mouse por un monto para ver cada factura).</p>`;
   // proveedores
   const prov={};S.forEach(p=>(p.gastos||[]).forEach(g=>{if(g.pend)return;const k=titleCase(provKey(g.prov));prov[k]=(prov[k]||0)+num(g.imp);}));
   const pv=Object.entries(prov).sort((a,c)=>c[1]-a[1]).slice(0,10),pmx=Math.max(...pv.map(x=>Math.abs(x[1])),1),ptot=Object.values(prov).reduce((a,c)=>a+c,0);
@@ -788,6 +798,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qi'),pop=$('pop
     let x=Math.min(Math.max(8,r.left-w/2+8),innerWidth-w-8),y=r.bottom+8;if(y+h>innerHeight-8)y=r.top-h-8;pop.style.left=x+'px';pop.style.top=y+'px';return;}
   if(!e.target.closest('#pop'))pop.style.display='none';},true);
 document.addEventListener('scroll',()=>{$('pop').style.display='none';},true);
+document.addEventListener('click',e=>{const tr=e.target.closest('tr.rub');if(!tr)return;const o=window._rubOpen=window._rubOpen||new Set(),r=tr.dataset.rn,op=!o.has(r);op?o.add(r):o.delete(r);tr.classList.toggle('open',op);document.querySelectorAll(`tr.rsub[data-rp="${tr.dataset.ri}"]`).forEach(x=>x.hidden=!op);});
 document.addEventListener('click',e=>{const ev=e.target.closest('[data-ev]');if(ev){window._evMode=ev.dataset.ev;render();return;}});
 document.addEventListener('click',e=>{const nv=e.target.closest('[data-v]');if(nv){e.preventDefault();go(nv.dataset.v);return;}});
 document.addEventListener('click',e=>{const t=e.target,b=B();if(!b)return;
