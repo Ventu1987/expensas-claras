@@ -487,12 +487,15 @@ function mesBarrio(b,i){
   return {...b,admin:h.admin||b.admin,cfg,gastos,ufs,obs,hist:b.hist.slice(0,i),_cerrado:true,_sinUfs:!ufs.length};
 }
 // Selector de mes: el en curso o cualquiera cerrado. Si el mes en curso todavía no tiene gastos, arranca en el último cerrado.
+const mesValido=(b,k)=>k===-1||(k>=0&&k<b.hist.length&&/^\d{4}-\d{2}/.test(b.hist[k].periodo||''));
+function mesIdx(b){const n=b.hist.length;let k=window._rm!=null&&window._rm[b.id]!=null?window._rm[b.id]:(b.gastos.length||!n?-1:n-1);return mesValido(b,k)?k:-1;}
+const mesVacio=b=>!b.gastos.length&&!b.ufs.some(u=>num(u.pagos)||num(u.part));
 function mesElegido(b,C){
-  const n=b.hist.length,valid=k=>k===-1||(k>=0&&k<n&&/^\d{4}-\d{2}/.test(b.hist[k].periodo||''));
-  let k=window._rm!=null&&window._rm[b.id]!=null?window._rm[b.id]:(b.gastos.length||!n?-1:n-1);if(!valid(k))k=-1;
+  const n=b.hist.length,valid=k=>mesValido(b,k);
+  let k=mesIdx(b);
   const bv=k<0?b:mesBarrio(b,k),Cv=k<0?C:calc(bv);
   const opts=[`<option value="-1" ${k<0?'selected':''}>${perLabel(b.cfg.periodo)} (en curso)</option>`,...b.hist.map((h,j)=>valid(j)?`<option value="${j}" ${j===k?'selected':''}>${perLabel(h.periodo)}</option>`:'').reverse()].join('');
-  const bar=`<div class="mesbar noprint"><label>Ver el mes</label><select id="rmPick" data-bid="${esc(b.id)}">${opts}</select>${k<0?'':`<span class="tag">mes cerrado</span><button class="btn ghost" id="rmCur" style="padding:5px 10px">Volver al mes en curso</button>`}${k<0&&!b.gastos.length&&n?'<span class="muted" style="font-size:12.5px">Este mes todavía no tiene gastos cargados.</span>':''}</div>`+
+  const bar=`<div class="mesbar noprint"><label>Ver el mes</label><select id="rmPick" data-bid="${esc(b.id)}">${opts}</select>${k<0?'':`<span class="tag">mes cerrado</span><button class="btn ghost" id="rmCur" style="padding:5px 10px">Volver al mes en curso</button>${k===n-1&&!PUB?`<button class="btn ghost" data-reabrir="1" style="padding:5px 10px">Reabrir ${perLabel(b.hist[k].periodo)}</button>`:''}`}${k<0&&!b.gastos.length&&n?'<span class="muted" style="font-size:12.5px">Este mes todavía no tiene gastos cargados.</span>':''}</div>`+
     (bv&&bv._sinUfs?'<p class="lead">Ese mes se importó sin el detalle por unidad: los totales están, pero no la cobranza ni la deuda de cada lote.</p>':'');
   return {b:bv,C:Cv,bar,k};
 }
@@ -827,7 +830,7 @@ function vCuenta(b,C){const i=Math.min(window._uf||0,b.ufs.length-1);
 function vHistorial(b,C){
   const cur={periodo:b.cfg.periodo,A:C.A,B:C.B,fondo:C.fondo,part:C.partT,total:C.total,cobranza:C.cobr,mora:C.mora,cajaOrd:C.finO,cajaExt:C.finE,cur:true};
   const rows=[...b.hist,cur];
-  return help('historial')+`<div class="card"><h2>Historial de liquidaciones</h2><p class="lead">El mes resaltado está en curso. "—" = dato no disponible.</p><div class="tw"><table><thead><tr><th>Período</th><th class="n">Ordinarios</th><th class="n">Extraord.</th><th class="n">Total liquidado</th><th class="n">Variación</th><th style="min-width:240px">Observaciones</th><th class="n">Cobranza</th><th class="n">Morosidad</th><th class="n">Fondo ord.</th><th class="n">Fondo ext.</th></tr></thead><tbody>`+
+  return help('historial')+`<div class="card"><div class="card-h"><div><h2>Historial de liquidaciones</h2><p class="lead">El mes resaltado está en curso. "—" = dato no disponible.</p></div>${b.hist.length&&/^\d{4}-\d{2}/.test(b.hist.at(-1).periodo||'')?`<button class="btn ghost noprint" data-reabrir="1">Reabrir ${perLabel(b.hist.at(-1).periodo)}</button>`:''}</div><div class="tw"><table><thead><tr><th>Período</th><th class="n">Ordinarios</th><th class="n">Extraord.</th><th class="n">Total liquidado</th><th class="n">Variación</th><th style="min-width:240px">Observaciones</th><th class="n">Cobranza</th><th class="n">Morosidad</th><th class="n">Fondo ord.</th><th class="n">Fondo ext.</th></tr></thead><tbody>`+
   rows.map((h,k)=>{const p=k?rows[k-1]:null,empty=h.cur&&!h.total,v=!empty&&p&&p.total?h.total/p.total-1:null,vA=!empty&&p&&p.A?h.A/p.A-1:null;
     const key=h.cur?b.cfg.periodo+'|__total':null;
     const obs=h.cur?`<textarea class="obs" rows="1" data-obs="${esc(key)}" placeholder="Qué pasó este mes">${esc(b.obs[key]||'')}</textarea>`:`<textarea class="obs" rows="1" data-hobs="${k}" placeholder="Qué pasó ese mes">${esc(h.obs||'')}</textarea>`;
@@ -837,7 +840,7 @@ function vAjustes(b){
   const c=b.cfg,f=(k,l,t='number',ph='')=>`<div><label>${l}</label>${t==='number'?mIn(`data-c="${k}"`,c[k],ph):`<input data-c="${k}" type="${t}" value="${esc(c[k]??'')}" placeholder="${ph}">`}</div>`;
   return help('ajustes')+`<div class="card"><h2>Datos del barrio</h2><div class="grid mt">
    <div><label>Nombre</label><input data-b="nombre" value="${esc(b.nombre)}"></div><div><label>Zona</label><input data-b="zona" value="${esc(b.zona||'')}"></div><div><label>Administración</label><input data-b="admin" value="${esc(b.admin||'')}"></div>${f('cuit','CUIT del consorcio','text')}</div></div>
-  <div class="card"><h2>Período</h2><div class="grid mt">${f('periodo','Período','month')}${f('venc','Vencimiento','date')}${f('fondo','Fondo de reserva (% de ordinarias)')}${f('interes','Interés por mora (% mensual)')}</div></div>
+  <div class="card"><h2>Período</h2><p class="lead">Mes en curso: <b>${perLabel(c.periodo)}</b>${b.hist.length&&/^\d{4}-\d{2}/.test(b.hist.at(-1).periodo||'')?` · último cerrado: ${perLabel(b.hist.at(-1).periodo)}`:''}. Para pasar al mes siguiente usá "Cerrar período" en Liquidación; si cerraste antes de tiempo, reabrilo. Cambiar el campo "Período" solo le cambia el nombre al mes, no mueve los datos.</p>${b.hist.length&&/^\d{4}-\d{2}/.test(b.hist.at(-1).periodo||'')?`<div class="row"><button class="btn ghost" data-reabrir="1">Reabrir ${perLabel(b.hist.at(-1).periodo)} (deshacer el cierre)</button></div>`:''}<div class="grid mt">${f('periodo','Período','month')}${f('venc','Vencimiento','date')}${f('fondo','Fondo de reserva (% de ordinarias)')}${f('interes','Interés por mora (% mensual)')}</div></div>
   <div class="card"><h2>Caja y banco ${qi('caja')}</h2><div class="grid mt">${f('cajaOrd','Saldo inicial fondo ordinario')}${f('cajaExt','Saldo inicial fondo extraordinario')}${f('fondoacum','Fondo de reserva acumulado al inicio')}${f('cobrExt','Cobranza imputada a extraordinarias','number','vacío = 0')}${f('egrOrd','Pagos realizados — ordinarios','number','vacío = igual a lo devengado')}${f('egrExt','Pagos realizados — extraordinarios','number','vacío = igual a lo devengado')}${f('saldoBanco','Saldo del extracto bancario al cierre','number','para conciliar')}</div></div>
   <div class="card"><h2>Página para propietarios</h2><p class="lead">Un link de solo lectura para mandar al grupo del barrio: el mes en pocas palabras, gastos por rubro con tus observaciones, cada factura con su comprobante, el estado de cuenta de cada unidad, la caja, los controles y la evolución de todos los meses. No muestra los nombres de los propietarios ni tus notas internas del período. Los propietarios ven lo último que publicaste: cuando el mes esté listo, tocá "Publicar".</p>
    ${!D.api.url?'<p class="muted">Primero conectá la app con la planilla en Configuración: la página se publica desde ahí.</p>':`<div class="row"><button class="btn" id="pubDo">${b.pubKey?'Actualizar lo publicado':'Publicar'}</button>${b.pubKey?`<button class="btn ghost" id="pubCopy">${ic('link')}Copiar link</button><a class="btn ghost" id="pubOpen" href="${esc(pubLink(b))}" target="_blank" rel="noopener">Ver como propietario</a><button class="btn ghost" id="pubNew" title="El link anterior deja de funcionar">Cambiar el link</button><button class="btn danger" id="pubOff">Dejar de publicar</button>`:''}</div>${b.pubKey?`<p class="lead mt">${b.pubAt?'Última publicación: '+new Date(b.pubAt).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'})+(b.updated&&b.updated>b.pubAt?' · <b>hay cambios sin publicar</b>':' · al día'):'Publicado.'}</p><input readonly value="${esc(pubLink(b))}" style="font-size:12px" onclick="this.select()">`:''}`}</div>
@@ -931,6 +934,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qi'),pop=$('pop
   if(!e.target.closest('#pop'))pop.style.display='none';},true);
 document.addEventListener('scroll',()=>{$('pop').style.display='none';},true);
 document.addEventListener('click',e=>{const tr=e.target.closest('tr.rub');if(!tr)return;const o=window._rubOpen=window._rubOpen||new Set(),r=tr.dataset.rn,op=!o.has(r);op?o.add(r):o.delete(r);tr.classList.toggle('open',op);document.querySelectorAll(`tr.rsub[data-rp="${tr.dataset.ri}"]`).forEach(x=>x.hidden=!op);});
+document.addEventListener('click',e=>{if(e.target.closest('[data-reabrir]')&&B()&&!PUB)reabrir();});
 document.addEventListener('click',e=>{const ev=e.target.closest('[data-ev]');if(ev){window._evMode=ev.dataset.ev;render();return;}});
 document.addEventListener('click',e=>{const nv=e.target.closest('[data-v]');if(nv){e.preventDefault();go(nv.dataset.v);return;}});
 let attIdx=null;
@@ -981,27 +985,47 @@ function closePeriod(){
   modal(`<h3>Cerrar ${perLabel(c.periodo)}</h3><p>Se guarda la liquidación en el historial y se arma el mes siguiente:</p><ul style="margin:0 0 10px 18px;padding:0;font-size:13px;line-height:1.7"><li>El total a pagar de cada unidad pasa a ser su saldo anterior (los intereses quedan separados).</li><li>Pagos, particulares y gastos quedan en cero.</li><li>Los fondos ordinario (${money(C.finO)}) y extraordinario (${money(C.finE)}) pasan como saldo inicial.</li></ul>${Object.keys(C.rub).some(r=>!b.obs[c.periodo+'|'+r])?'<p class="help" style="display:block">Hay rubros sin observación. Conviene completarlos antes de cerrar.</p>':''}<div class="row mt" style="justify-content:flex-end"><button class="btn ghost" id="cpNo">Cancelar</button><button class="btn" id="cpOk">Cerrar período</button></div>`);
   $('cpNo').onclick=closeModal;
   $('cpOk').onclick=()=>{const rub={};Object.entries(C.rub).forEach(([k,v])=>rub[k]=v.A+v.B);
-    b.hist.push({periodo:c.periodo,admin:b.admin||'',obsPeriodo:c.obsPeriodo||'',venc:c.venc||'',interes:num(c.interes),cobrosNoId:c.cobrosNoId||null,gastos:b.gastos.map(gSnap),ufs:snapUfs(C),cajaIniOrd:C.cajaO,cajaIniExt:C.cajaE,fondoPct:num(c.fondo),fondoFin:C.fondoFin,cobrExt:C.cobrE,egrOrd:C.egrO,egrExt:C.egrE,saldoBanco:has(c.saldoBanco)?+c.saldoBanco:'',A:C.A,B:C.B,fondo:C.fondo,part:C.partT,total:C.total,cobranza:C.cobr,mora:C.mora,cajaOrd:C.finO,cajaExt:C.finE,rubros:rub,obs:b.obs[c.periodo+'|__total']||''});
+    b.hist.push({periodo:c.periodo,admin:b.admin||'',obsPeriodo:c.obsPeriodo||'',venc:c.venc||'',interes:num(c.interes),cobrosNoId:c.cobrosNoId||null,gastos:b.gastos.map(gSnap),ufs:snapUfs(C),cajaIniOrd:C.cajaO,cajaIniExt:C.cajaE,fondoPct:num(c.fondo),fondoFin:C.fondoFin,cobrExt:C.cobrE,egrOrd:C.egrO,egrExt:C.egrE,saldoBanco:has(c.saldoBanco)?+c.saldoBanco:'',cfgRaw:{egrOrd:c.egrOrd??'',egrExt:c.egrExt??'',cobrExt:c.cobrExt??''},...(b.ufs.some(u=>has(u.ref))?{refs:Object.fromEntries(b.ufs.filter(u=>has(u.ref)).map(u=>[u.id,u.ref]))}:{}),A:C.A,B:C.B,fondo:C.fondo,part:C.partT,total:C.total,cobranza:C.cobr,mora:C.mora,cajaOrd:C.finO,cajaExt:C.finE,rubros:rub,obs:b.obs[c.periodo+'|__total']||''});
     C.rows.forEach(r=>{r.u.intPrev=Math.round(Math.max(Math.min(num(r.u.intPrev),r.neto),0)+r.int);r.u.saldo=Math.round(r.total);r.u.pagos=0;r.u.part=0;r.u.ref='';});
     c.cajaOrd=Math.round(C.finO*100)/100;c.cajaExt=Math.round(C.finE*100)/100;c.fondoacum=Math.round(C.fondoFin);
     Object.assign(c,{cobrExt:'',egrOrd:'',egrExt:'',saldoBanco:'',obsPeriodo:'',cobrosNoId:null});
     const [y,m]=(c.periodo||'2026-01').split('-').map(Number),nx=new Date(y,m,1);c.periodo=nx.getFullYear()+'-'+String(nx.getMonth()+1).padStart(2,'0');c.venc=c.periodo+'-10';
     b.gastos=[];touch();closeModal();go('historial');toast(b.pubKey?'Período cerrado. Acordate de actualizar la página para propietarios en Ajustes':'Período cerrado');};
 }
+// Deshace el último cierre: el mes cerrado vuelve a estar en curso, con sus gastos, pagos y saldos tal como estaban.
+function reabrir(){
+  const b=B(),i=b.hist.length-1,h=b.hist[i];if(!h||!/^\d{4}-\d{2}/.test(h.periodo||'')){toast('No hay un mes cerrado para reabrir');return;}
+  if(!h.ufs||!h.ufs.length){toast(perLabel(h.periodo)+' se importó sin el detalle por unidad: no se puede reabrir');return;}
+  const lost=[b.gastos.length?b.gastos.length+' gasto(s)':'',b.ufs.filter(u=>num(u.pagos)).length?b.ufs.filter(u=>num(u.pagos)).length+' pago(s)':'',b.ufs.filter(u=>num(u.part)).length?'gastos particulares':''].filter(Boolean);
+  modal(`<h3>Reabrir ${perLabel(h.periodo)}</h3><p>${perLabel(h.periodo)} vuelve a ser el mes en curso, con sus gastos, pagos, saldos y fondos tal como estaban al cerrarlo. Lo podés corregir y cerrar de nuevo.</p>${lost.length?`<p class="help" style="display:block">Ojo: ${perLabel(b.cfg.periodo)} ya tiene cargado: ${lost.join(', ')}. Al reabrir se descarta.</p>`:`<p class="lead">${perLabel(b.cfg.periodo)} no tiene nada cargado, así que no se pierde nada.</p>`}<div class="row mt" style="justify-content:flex-end"><button class="btn ghost" id="raNo">Cancelar</button><button class="btn" id="raOk">Reabrir ${perLabel(h.periodo)}</button></div>`);
+  $('raNo').onclick=closeModal;
+  $('raOk').onclick=()=>{const bv=mesBarrio(b,i),raw=h.cfgRaw||{},refs=h.refs||{};
+    // pagos al banco: si al cerrar estaban vacíos ("igual a lo devengado") vuelven vacíos
+    const egr=(k,dev)=>k in raw?raw[k]:(Math.abs(num(bv.cfg[k])-num(dev))<1?'':bv.cfg[k]);
+    Object.assign(b.cfg,{periodo:h.periodo,venc:bv.cfg.venc||h.periodo+'-10',interes:bv.cfg.interes,fondo:Math.round(bv.cfg.fondo*1e4)/1e4,fondoacum:bv.cfg.fondoacum,cajaOrd:bv.cfg.cajaOrd,cajaExt:bv.cfg.cajaExt,
+      cobrExt:'cobrExt' in raw?raw.cobrExt:(num(h.cobrExt)?h.cobrExt:''),egrOrd:egr('egrOrd',h.A),egrExt:egr('egrExt',h.B),saldoBanco:bv.cfg.saldoBanco,obsPeriodo:bv.cfg.obsPeriodo,cobrosNoId:bv.cfg.cobrosNoId});
+    const tc=b.ufs.reduce((x,u)=>x+num(u.coef),0),cur=Object.fromEntries(b.ufs.map(u=>[u.id,u]));
+    // si el coeficiente no cambió, se conserva como estaba cargado (m², peso relativo, etc.)
+    b.ufs=bv.ufs.map(u=>{const c0=cur[u.id],same=c0&&tc&&Math.abs(num(c0.coef)/tc*100-u.coef)<1e-6;return {...u,coef:same?c0.coef:u.coef,intPrev:Math.round(u.intPrev*100)/100,ref:refs[u.id]??''};});
+    b.gastos=(h.gastos||[]).map(g=>({...g}));if(h.obs&&!b.obs[h.periodo+'|__total'])b.obs[h.periodo+'|__total']=h.obs;
+    b.hist.pop();window._rm={};touch();closeModal();go('resumen');toast(perLabel(h.periodo)+' reabierto: es otra vez el mes en curso');};
+}
 function reciboTxt(b,i){const C=calc(b),r=C.rows[i],c=b.cfg;
   return `${b.nombre} — ${r.u.id}${r.u.prop?' ('+r.u.prop+')':''}\n${perLabel(c.periodo)} · Vence ${c.venc}\n\nSaldo anterior: ${money(r.u.saldo)}\nPagos registrados: -${money(r.u.pagos)}\nInterés por mora: ${money(r.int)}\nExpensas ordinarias: ${money(r.ord)}\n${r.fr?'Fondo de reserva: '+money(r.fr)+'\n':''}Expensas extraordinarias: ${money(r.ex)}\n${r.part?'Gastos particulares: '+money(r.part)+'\n':''}TOTAL A PAGAR: ${money(r.total)}`;}
 
 /* ---------- PDF ---------- */
 function printNow(){try{window.print();}catch(e){}setTimeout(()=>toast('Si no se abrió el diálogo de impresión, abrí la app publicada en GitHub Pages: la vista previa de Claude no permite imprimir.'),600);}
-function printAll(kind){const b=B();if(!b){printNow();return;}const C=calc(b);let h='';
+function printAll(kind,k){let b=B();if(!b){printNow();return;}if(k!=null&&k>=0&&b.hist[k])b=mesBarrio(b,k);const C=calc(b);let h='';
   if(kind==='cuentas')h=b.ufs.map((u,i)=>`<div class="${i?'pbreak':''}">${reciboHTML(b,C,i)}</div>`).join('');
   else h=`<h2 style="margin:0 0 10px">Informe del período</h2>`+vResumen(b,C,true)+`<div class="pbreak"></div>`+vLiquidacion(b,C,true)+`<div class="pbreak"></div>`+vCaja(b,C)+vControles(b,C).replace(/<textarea[^>]*>([\s\S]*?)<\/textarea>/,(m,t)=>`<div style="white-space:pre-wrap;font-size:12px">${t}</div>`)+`<div class="pbreak"></div>`+vHistorial(b,C);
-  $('print-root').innerHTML=h;document.body.classList.add('print-all');$('phSec').textContent=kind==='cuentas'?'Estados de cuenta':'Informe completo';
+  $('print-root').innerHTML=h;document.body.classList.add('print-all');$('phSec').textContent=kind==='cuentas'?'Estados de cuenta':'Informe completo';$('phBarrio').textContent=b.nombre+' — '+perLabel(b.cfg.periodo);
   const done=()=>{document.body.classList.remove('print-all');$('print-root').innerHTML='';window.removeEventListener('afterprint',done);};window.addEventListener('afterprint',done);printNow();setTimeout(done,4000);}
-function pdfMenu(){const b=B(),isB=b&&!GLOBAL.some(x=>x[0]===D.view);
-  modal(`<h3>Exportar a PDF</h3><p class="lead">Se abre el diálogo de impresión: elegí "Guardar como PDF".</p><div style="display:grid;gap:8px"><button class="btn ghost" id="pdf1">Esta pantalla</button>${isB?`<button class="btn ghost" id="pdf2">Informe completo del período (resumen, rubros, prorrateo, caja, controles, historial)</button><button class="btn ghost" id="pdf3">Estados de cuenta de todas las unidades (uno por hoja)</button>`:''}</div><div class="row mt" style="justify-content:flex-end"><button class="btn ghost" id="pdfX">Cerrar</button></div>`);
+function pdfMenu(){const b=B(),isB=b&&!GLOBAL.some(x=>x[0]===D.view),k0=b?mesIdx(b):-1;
+  const sel=isB&&b.hist.length?`<div class="row" style="margin:4px 0 2px"><label style="margin:0;color:var(--ink);font-weight:600">Mes del informe</label><select id="pdfMes" style="max-width:240px"><option value="-1" ${k0<0?'selected':''}>${perLabel(b.cfg.periodo)} (en curso)</option>${b.hist.map((h,j)=>mesValido(b,j)&&h.ufs?`<option value="${j}" ${j===k0?'selected':''}>${perLabel(h.periodo)}</option>`:'').reverse().join('')}</select></div>`:'';
+  modal(`<h3>Exportar a PDF</h3><p class="lead">Se abre el diálogo de impresión: elegí "Guardar como PDF".</p><div style="display:grid;gap:8px"><button class="btn ghost" id="pdf1">Esta pantalla</button>${sel}${isB?`<button class="btn ghost" id="pdf2">Informe completo del período (resumen, rubros, prorrateo, caja, controles, historial)</button><button class="btn ghost" id="pdf3">Estados de cuenta de todas las unidades (uno por hoja)</button>`:''}</div><div class="row mt" style="justify-content:flex-end"><button class="btn ghost" id="pdfX">Cerrar</button></div>`);
   $('pdfX').onclick=closeModal;$('pdf1').onclick=()=>{closeModal();setTimeout(printNow,150);};
-  if(isB){$('pdf2').onclick=()=>{closeModal();setTimeout(()=>printAll('informe'),150);};$('pdf3').onclick=()=>{closeModal();setTimeout(()=>printAll('cuentas'),150);};}}
+  const km=()=>$('pdfMes')?+$('pdfMes').value:-1;
+  if(isB){$('pdf2').onclick=()=>{const k=km();closeModal();setTimeout(()=>printAll('informe',k),150);};$('pdf3').onclick=()=>{const k=km();closeModal();setTimeout(()=>printAll('cuentas',k),150);};}}
 
 /* ---------- Google Sheets (Apps Script) ---------- */
 let syncState='local',syncT;
