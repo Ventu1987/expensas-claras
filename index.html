@@ -78,7 +78,7 @@ label{display:block;font-size:12px;color:var(--mute);margin-bottom:4px;font-weig
 .btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--acc);background:var(--acc);color:var(--accInk);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
 .btn.sec{background:var(--surface);color:var(--acc)}.btn.ghost{border-color:var(--line);background:var(--surface);color:var(--ink);font-weight:500}
 .btn.danger{border-color:var(--bad);background:var(--surface);color:var(--bad)}
-.btn svg{width:15px;height:15px}
+.btn svg{width:15px;height:15px}a.btn{text-decoration:none}
 .x{border:none;background:none;color:var(--mute);cursor:pointer;font-size:17px;padding:2px 6px;border-radius:6px}.x:hover{color:var(--bad);background:var(--badSoft)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .mt{margin-top:14px}
@@ -93,12 +93,17 @@ label{display:block;font-size:12px;color:var(--mute);margin-bottom:4px;font-weig
 .st{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap}
 .st.ok{background:var(--okSoft);color:var(--ok)}.st.bad{background:var(--badSoft);color:var(--bad)}.st.warn{background:var(--warnSoft);color:var(--warn)}.st.info{background:var(--accSoft);color:var(--acc)}
 .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--accSoft);color:var(--acc)}.tag.b{background:var(--warnSoft);color:var(--warn)}
-tr.cur td{background:var(--accSoft)}
+tr.cur td{background:var(--accSoft)}tr.grp td{background:var(--surface2)}
+a.adj{display:inline-flex;align-items:center;gap:3px;color:var(--acc);font-size:11.5px;font-weight:600;text-decoration:none;white-space:nowrap;margin-right:6px}a.adj:hover{text-decoration:underline}a.adj svg{width:13px;height:13px}
+.attbtn{border:1px dashed var(--line2);background:none;color:var(--mute);border-radius:6px;padding:3px 7px;font-size:11.5px;cursor:pointer;white-space:nowrap}.attbtn:hover{color:var(--acc);border-color:var(--acc)}
+.attbtn[disabled]{opacity:.6;cursor:wait}
 .lectura{border-left:4px solid var(--acc)}.lect{margin:0;padding-left:20px;line-height:1.7;font-size:14px}.lect li{margin:2px 0}.lect li::marker{color:var(--acc)}
 /* Doña Rosa */
 .help{display:none;background:var(--help);border:1px solid var(--helpLine);color:var(--helpInk);border-radius:8px;padding:10px 12px;font-size:13px;margin:4px 0 12px}
 .help b{font-weight:700}
 body.dona .help{display:block}
+body.pub .barrio-pick,body.pub .side-h,body.pub #syncChip,body.pub .side-foot{display:none}
+.pubbar{display:flex;gap:12px;align-items:flex-start;background:var(--accSoft);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:18px;font-size:13.5px;line-height:1.5}.pubbar svg{width:20px;height:20px;flex:none;color:var(--acc);margin-top:1px}
 .qi{display:none;width:15px;height:15px;border-radius:50%;background:var(--help);border:1px solid var(--helpLine);color:var(--helpInk);font-size:10px;font-weight:700;align-items:center;justify-content:center;cursor:help}
 body.dona .qi{display:inline-flex}
 /* Barrios home */
@@ -166,7 +171,7 @@ body.dona .qi{display:inline-flex}
     <div class="top">
       <div><h1 id="topTitle"></h1><div class="sub" id="topSub"></div></div>
       <div class="sp"></div>
-      <span class="chip" id="syncChip"><span class="dot"></span><span id="syncTxt">Solo en este navegador</span></span>
+      <span class="chip" id="syncChip" role="button" tabindex="0" title="Estado de la conexión con la planilla" style="cursor:pointer"><span class="dot"></span><span id="syncTxt">Solo en este navegador</span></span>
       <button class="tbtn" id="btnDona" title="Explica cada concepto en lenguaje simple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>Modo Doña Rosa</button>
       <button class="tbtn" id="btnTheme" title="Modo claro / oscuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span id="themeTxt">Oscuro</span></button>
       <button class="tbtn" id="btnPdf" title="Exportar a PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>PDF</button>
@@ -182,6 +187,7 @@ body.dona .qi{display:inline-flex}
 <div class="toast" id="toast"></div>
 <div class="tip" id="tip"></div>
 <div class="pop" id="pop"></div>
+<input type="file" id="fileIn" accept="image/*,application/pdf" hidden>
 
 <script>
 /* =========================================================
@@ -190,6 +196,9 @@ body.dona .qi{display:inline-flex}
    ========================================================= */
 const RUBROS=['Seguridad y vigilancia','Personal (sueldos y cargas)','Abonos de servicios','Mantenimiento de partes comunes','Mantenimiento de espacios verdes','Mantenimiento edilicio e instalaciones','Servicios públicos (luz, agua)','Limpieza y residuos','Seguros','Honorarios de administración','Gastos bancarios e impuestos','Obras y mejoras','Otros'];
 const KEY='expensas-claras-v1';
+// Página para propietarios: ?ver=<barrio>&k=<clave pública>&api=<url de la planilla>. Solo lectura, no toca los datos del navegador.
+const QS=new URLSearchParams(location.search);
+const PUB=QS.get('ver')&&QS.get('k')&&QS.get('api')?{id:QS.get('ver'),k:QS.get('k'),api:QS.get('api'),at:''}:null;
 const $=id=>document.getElementById(id);
 const num=v=>(v===''||v==null||isNaN(+v))?0:+v;
 const has=v=>!(v===''||v==null);
@@ -249,7 +258,7 @@ function demo(){
 }
 function initial(){return {v:1,barrios:[demo()],activeId:'demo',view:'inicio',theme:(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light',dona:false,api:{url:'',token:'',auto:true}};}
 function load(){try{const r=localStorage.getItem(KEY);if(r){D=JSON.parse(r);D.api=D.api||{url:'',token:'',auto:true};return;}}catch(e){}D=initial();}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){}}
+function persist(){if(PUB)return;try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){}}
 function touch(){const b=B();if(b)b.updated=new Date().toISOString();persist();queueSync();}
 const B=()=>D.barrios.find(x=>x.id===D.activeId)||null;
 
@@ -333,11 +342,18 @@ const I={
  historial:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
  ajustes:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
  conexion:'<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
- plus:'<path d="M12 5v14M5 12h14"/>'
+ p_mes:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+ p_facturas:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+ p_cuenta:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+ p_evol:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ clip:'<path d="M21 11.5l-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6l8.5-8.5"/>',
+ link:'<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>'
 };
 const ic=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${I[k]}</svg>`;
-const VIEWS=[['resumen','Resumen'],['unidades','Unidades'],['gastos','Gastos'],['liquidacion','Liquidación'],['caja','Caja y banco'],['controles','Controles'],['estadisticas','Estadísticas'],['extra','Extraordinarias'],['cuenta','Estado de cuenta'],['historial','Historial'],['ajustes','Ajustes del barrio']];
-const GLOBAL=[['inicio','Mis barrios','home'],['conexion','Configuración','conexion']];
+let VIEWS=[['resumen','Resumen'],['unidades','Unidades'],['gastos','Gastos'],['liquidacion','Liquidación'],['caja','Caja y banco'],['controles','Controles'],['estadisticas','Estadísticas'],['extra','Extraordinarias'],['cuenta','Estado de cuenta'],['historial','Historial'],['ajustes','Ajustes del barrio']];
+let GLOBAL=[['inicio','Mis barrios','home'],['conexion','Configuración','conexion']];
+const PVIEWS=[['p_mes','El mes'],['p_facturas','Facturas'],['p_cuenta','Mi estado de cuenta'],['p_evol','Evolución']];
 
 /* ---------- Navegación ---------- */
 function go(v){D.view=v;persist();if(location.hash!=='#'+v)history.replaceState(null,'','#'+v);render();window.scrollTo(0,0);}
@@ -350,15 +366,17 @@ function shell(){
   const vt=[...VIEWS,...GLOBAL].find(x=>x[0]===D.view);
   const isG=GLOBAL.some(x=>x[0]===D.view);
   $('topTitle').textContent=isG?vt[1]:(b?b.nombre+' · '+(vt?vt[1]:''):'');
-  $('topSub').textContent=isG?'':(b?`Período ${perLabel(b.cfg.periodo)}${b.cfg.venc?' · vence '+b.cfg.venc.split('-').reverse().join('/'):''}${b.zona?' · '+b.zona:''}`:'');
+  if(PUB){$('topSub').textContent=b?`Página para propietarios · ${perLabel(b.cfg.periodo)}${b.cfg.venc?' · vence '+b.cfg.venc.split('-').reverse().join('/'):''}${PUB.at?' · publicada el '+new Date(PUB.at).toLocaleDateString('es-AR'):''}`:'';}
+  else $('topSub').textContent=isG?'':(b?`Período ${perLabel(b.cfg.periodo)}${b.cfg.venc?' · vence '+b.cfg.venc.split('-').reverse().join('/'):''}${b.zona?' · '+b.zona:''}`:'');
   document.body.classList.toggle('dark',D.theme==='dark');document.body.classList.toggle('dona',!!D.dona);
   $('themeTxt').textContent=D.theme==='dark'?'Claro':'Oscuro';$('btnDona').classList.toggle('on',!!D.dona);
   $('phBarrio').textContent=b&&!isG?b.nombre+' — '+perLabel(b.cfg.periodo):'Expensas Claras';$('phSec').textContent=vt?vt[1]:'';$('phDate').textContent='Emitido el '+new Date().toLocaleDateString('es-AR');
   syncChip();
 }
-function render(){if(!B()&&!GLOBAL.some(x=>x[0]===D.view))D.view='inicio';shell();$('view').innerHTML=viewHTML(D.view);after(D.view);}
+function render(){if(PUB&&!B()){shell();$('view').innerHTML=PUB.msg||'<div class="card"><p class="muted">Cargando…</p></div>';return;}if(!B()&&!GLOBAL.some(x=>x[0]===D.view))D.view='inicio';shell();$('view').innerHTML=viewHTML(D.view);after(D.view);}
 function viewHTML(v){const b=B();switch(v){case'inicio':return vInicio();case'conexion':return vConexion();}
   if(!b)return vInicio();const C=calc(b);
+  if(PUB)return ({p_mes:vPMes,p_facturas:vPFacturas,p_cuenta:vPCuenta,p_evol:vEstadisticas}[v]||vPMes)(b,C);
   return ({resumen:vResumen,estadisticas:vEstadisticas,extra:vExtra,unidades:vUnidades,gastos:vGastos,liquidacion:vLiquidacion,caja:vCaja,controles:vControles,cuenta:vCuenta,historial:vHistorial,ajustes:vAjustes}[v]||vResumen)(b,C);}
 
 /* ---------- Vistas ---------- */
@@ -471,7 +489,10 @@ function serieFull(b,C){
     rubros:Object.fromEntries(Object.entries(C.rub).map(([k,x])=>[k,x.A+x.B])),gastos:b.gastos.map(gSnap),ufs:snapUfs(C),admin:b.admin||''};
   return [...b.hist,cur];
 }
-const gSnap=g=>({fecha:g.fecha||'',rubro:g.rubro||'Otros',prov:g.prov||'',comp:g.comp||'',tipo:g.tipo==='B'?'B':'A',imp:num(g.imp),pend:!!g.pend,...(g.reclas?{reclas:true}:{})});
+const gSnap=g=>({fecha:g.fecha||'',rubro:g.rubro||'Otros',prov:g.prov||'',comp:g.comp||'',tipo:g.tipo==='B'?'B':'A',imp:num(g.imp),pend:!!g.pend,...(g.reclas?{reclas:true}:{}),...(g.adj&&g.adj.length?{adj:g.adj}:{})});
+const okUrl=u=>/^https:\/\/(drive|docs)\.google\.com\//.test(u||'');
+// Links a los comprobantes de un gasto (foto o PDF guardado en Google Drive).
+const adjLinks=(g,short)=>(g.adj||[]).filter(a=>okUrl(a.u)).map((a,k)=>`<a class="adj" href="${esc(a.u)}" target="_blank" rel="noopener" title="Ver comprobante${a.n?': '+esc(a.n):''}">${ic('clip')}${short?'':(g.adj.length>1?'Ver '+(k+1):'Ver')}</a>`).join('');
 const mlab=p=>{if(!/^\d{4}-\d{2}/.test(p||''))return String(p||'').replace(/[()]/g,'');const l=perLabel(p).split(' ');return (l[0]||'').slice(0,3)+' '+(l[1]||'').slice(2);};
 function lineChart(labels,series,fmtV,opt={}){
   const W=680,H=(opt.h||270)+(opt.totals?22:0),pl=64,pr=34,pt=26,pb=opt.totals?52:30,iw=W-pl-pr,ih=H-pt-pb,all=series.flatMap(s=>s.vals.filter(v=>v!=null));
@@ -534,7 +555,7 @@ function vEstadisticas(b,C){
       const resto=S.map((p,i)=>num((p.rubros||{})[r])-Object.values(det).reduce((a,d)=>a+d.v[i],0));
       if(resto.some(v=>Math.abs(v)>1))det['Sin detalle cargado']={v:resto.map(v=>Math.abs(v)>1?v:0),c:resto.map(v=>Math.abs(v)>1?[{prov:'Ese mes se cargó el total del rubro, sin las facturas',imp:v}]:[])};
       const subs=Object.entries(det).sort((a,c)=>Math.abs(c[1].v.reduce((x,y)=>x+y,0))-Math.abs(a[1].v.reduce((x,y)=>x+y,0))).map(([k,d])=>{const st=d.v.reduce((x,y)=>x+y,0),sm=conG.length?conG.reduce((a,p)=>a+d.v[S.indexOf(p)],0)/conG.length:0;
-        return `<tr class="rsub" data-rp="${ri}" ${open?'':'hidden'}><td class="nw">${esc(k)}</td>${d.v.map((v,i)=>!d.c[i].length?'<td class="n muted">·</td>':`<td class="n" data-tip="${esc('<b>'+esc(k)+' · '+perLabel(S[i].periodo)+'</b>'+d.c[i].map(g=>'<br>'+esc(g.prov)+' — <b>'+money(g.imp)+'</b>'+(g.tipo==='B'?' (extraord.)':'')+(g.pend?' (sin explicar)':'')).join(''))}">${fmt(v)}${d.c[i].length>1?`<br><span class="muted" style="font-size:10.5px">${d.c[i].length} facturas</span>`:''}</td>`).join('')}<td class="n">${fmt(st)}</td><td class="n">${fmt(sm)}</td><td class="n">${pct(st/(totA+totB||1))}</td></tr>`;}).join('');
+        return `<tr class="rsub" data-rp="${ri}" ${open?'':'hidden'}><td class="nw">${esc(k)}</td>${d.v.map((v,i)=>!d.c[i].length?'<td class="n muted">·</td>':`<td class="n" data-tip="${esc('<b>'+esc(k)+' · '+perLabel(S[i].periodo)+'</b>'+d.c[i].map(g=>'<br>'+esc(g.prov)+' — <b>'+money(g.imp)+'</b>'+(g.tipo==='B'?' (extraord.)':'')+(g.pend?' (sin explicar)':'')+((g.adj||[]).length?' 📎':'')).join(''))}">${fmt(v)}${d.c[i].length>1?`<br><span class="muted" style="font-size:10.5px">${d.c[i].length} facturas</span>`:''}${d.c[i].some(g=>(g.adj||[]).length)?`<br>${d.c[i].map(g=>adjLinks(g,true)).join('')}`:''}</td>`).join('')}<td class="n">${fmt(st)}</td><td class="n">${fmt(sm)}</td><td class="n">${pct(st/(totA+totB||1))}</td></tr>`;}).join('');
       return `<tr class="rub${open?' open':''}" data-ri="${ri}" data-rn="${esc(r)}" title="Ver el detalle de ${esc(r)}"><td class="nw"><span class="car">▸</span>${esc(r)} <span class="muted" style="font-size:11px">(${Object.keys(det).filter(x=>x!=='Sin detalle cargado').length||'—'})</span></td>${S.map((p,i)=>cell(p,S[i-1],r)).join('')}<td class="n"><b>${fmt(t)}</b></td><td class="n">${fmt(m)}</td><td class="n">${pct(t/(totA+totB||1))}</td></tr>`+subs;}).join('')+
     `</tbody><tfoot><tr><td>Total</td>${S.map(p=>`<td class="n">${fmt(num(p.A)+num(p.B))}</td>`).join('')}<td class="n">${fmt(totA+totB)}</td><td class="n">${fmt(conG.length?conG.reduce((a,p)=>a+num(p.A)+num(p.B),0)/conG.length:0)}</td><td class="n">100,00%</td></tr></tfoot></table></div><p class="lead mt">* mes en curso. Debajo de cada monto, la variación contra el mes anterior (en pesos cuando el mes anterior era casi cero). Tocá un rubro para ver en qué se gastó: un renglón por proveedor o concepto (pasá el mouse por un monto para ver cada factura).</p>`;
   // proveedores
@@ -577,7 +598,7 @@ function vEstadisticas(b,C){
   // detalle de un mes
   const mi=Math.min(window._sm??n-1,n-1),M=S[mi];
   const det=`<div class="row noprint" style="margin-bottom:10px"><select id="smPick" style="max-width:260px">${S.map((p,i)=>`<option value="${i}" ${i===mi?'selected':''}>${perLabel(p.periodo)}${p.cur?' (en curso)':''}</option>`).join('')}</select></div>`+
-    ((M.gastos||[]).length?`<div class="tw"><table><thead><tr><th>Rubro</th><th>Proveedor / concepto</th><th>Tipo</th><th class="n">Importe</th></tr></thead><tbody>${M.gastos.map(g=>`<tr><td class="nw">${esc(g.rubro)}</td><td style="font-size:12.5px">${esc(g.prov)}</td><td class="nw"><span class="tag ${g.tipo==='B'?'b':''}">${g.tipo==='P'?'Particular':g.tipo}</span>${g.reclas?' <span class="st warn">Reclasificado</span>':''}${g.pend?' <span class="st bad">Falta explicar</span>':''}</td><td class="n">${fmt(g.imp)}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="3">Total</td><td class="n">${fmt(M.gastos.reduce((a,g)=>a+num(g.imp),0))}</td></tr></tfoot></table></div>`:'<p class="muted">Ese mes no tiene gastos cargados.</p>');
+    ((M.gastos||[]).length?`<div class="tw"><table><thead><tr><th>Rubro</th><th>Proveedor / concepto</th><th>Comprobante</th><th>Tipo</th><th class="n">Importe</th></tr></thead><tbody>${M.gastos.map(g=>`<tr><td class="nw">${esc(g.rubro)}</td><td style="font-size:12.5px">${esc(g.prov)}</td><td class="nw" style="font-size:12px">${esc(g.comp||'')} ${adjLinks(g)}</td><td class="nw"><span class="tag ${g.tipo==='B'?'b':''}">${g.tipo==='P'?'Particular':g.tipo}</span>${g.reclas?' <span class="st warn">Reclasificado</span>':''}${g.pend?' <span class="st bad">Falta explicar</span>':''}</td><td class="n">${fmt(g.imp)}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="4">Total</td><td class="n">${fmt(M.gastos.reduce((a,g)=>a+num(g.imp),0))}</td></tr></tfoot></table></div>`:'<p class="muted">Ese mes no tiene gastos cargados.</p>');
   return help('estadisticas')+k+
    `<div class="two"><div class="card"><h2>Gasto mensual</h2><p class="lead">Ordinario y extraordinario de cada mes, para el barrio o para un lote común.</p>${chartEvol(b,C,S)}</div>
     <div class="card"><h2>Cuánto paga un lote tipo</h2><p class="lead">${tipo?esc(tipo.id)+', coeficiente '+nl(mode)+'%':'—'}: expensa del mes sin deudas ni intereses.</p>${lineChart(L,[{name:'Ordinarias',color:'var(--c1)',vals:loteVals.map(v=>v?v.o:null)},...(loteVals.some(v=>v&&v.e)?[{name:'Extraordinarias',color:'var(--c2)',vals:loteVals.map(v=>v?v.e:null)}]:[])],money,{totals:loteVals.map(v=>v?v.o+v.e:null)})}<p class="lead" style="margin-top:4px">Abajo de cada mes, el <b>total</b> (ordinarias + extraordinarias). En todo el período: <b>${money(loteVals.reduce((a,v)=>a+(v?v.o+v.e:0),0))}</b>.</p></div></div>
@@ -588,6 +609,43 @@ function vEstadisticas(b,C){
    <div class="card"><h2>Principales proveedores</h2><p class="lead">Lo pagado a cada proveedor en todo el período (10 mayores).</p>${provHTML}</div>
    <div class="card"><h2>Deuda por unidad, mes a mes</h2><p class="lead">Solo unidades que tuvieron deuda en algún mes.</p>${heat}</div>
    <div class="card"><h2>Detalle de gastos de un mes</h2><p class="lead">Elegí el mes para ver cada factura.</p>${det}</div>`;
+}
+/* ---------- Página para propietarios (solo lectura) ---------- */
+function pubIntro(b){return `<div class="pubbar">${ic('controles')}<div><b>Página de transparencia de ${esc(b.nombre)}.</b> Acá están los números del mes tal como los liquidó la administración${b.admin?' ('+esc(b.admin)+')':''}: en qué se gastó, cada factura con su comprobante, el estado de cuenta de cada unidad y la evolución de todos los meses. Es de solo lectura. Si algo no se entiende, preguntale a la administración.</div></div>`;}
+function vPMes(b,C){
+  const lm=lecturaMes(b,C),obsT=b.obs[b.cfg.periodo+'|__total'],ct=controles(b,C),lab={ok:'OK',bad:'Revisar',warn:'Atención',info:'Info'};
+  return pubIntro(b)+(lm?`<div class="card lectura"><h2>El mes en pocas palabras</h2><p class="lead">Armado automáticamente con los números de la liquidación.</p>${lm}${obsT?`<p class="mt" style="font-size:13.5px"><b>Comentario de la administración:</b> ${esc(obsT)}</p>`:''}</div>`:'')+kpis(b,C)+
+   `<div class="card"><h2>Gastos por rubro y variación ${qi('rubros')}</h2><p class="lead">Cada rubro contra el mes anterior, con la explicación de la administración. El detalle de cada factura está en Facturas.</p>${tablaRubros(b,C,false)}</div>
+   <div class="two"><div class="card"><h2>Evolución mensual</h2><p class="lead">Ordinario y extraordinario de cada mes.</p>${chartEvol(b,C,serieFull(b,C).slice(-12))}</div>
+    <div class="card"><h2>Controles automáticos ${qi('controles')}</h2><p class="lead">Los mismos controles que ve la administración, sin filtrar.</p><table><tbody>${ct.map(x=>`<tr><td style="width:84px"><span class="st ${x.st}">${lab[x.st]}</span></td><td><b>${x.t}</b><br><span class="muted" style="font-size:12.5px">${x.r}</span></td></tr>`).join('')}</tbody></table></div></div>
+   <div class="card"><h2>Caja y banco ${qi('caja')}</h2><p class="lead">La plata del barrio: con cuánto empezó el mes, cuánto entró, cuánto salió y cuánto quedó.</p>${flujoTabla(b,C)}</div>
+   <div class="card"><h2>Deuda por unidad ${qi('morosidad')}</h2><p class="lead">Saldo impago del mes anterior.</p>${deudores(b,C)}</div>`;
+}
+function vPFacturas(b,C){
+  const S=serieFull(b,C),n=S.length,mi=Math.min(window._sm??n-1,n-1),M=S[mi],G=M.gastos||[];
+  const by={};G.forEach(g=>{(by[g.rubro||'Otros']=by[g.rubro||'Otros']||[]).push(g);});
+  const rs=Object.entries(by).sort((a,c)=>c[1].reduce((s,g)=>s+num(g.imp),0)-a[1].reduce((s,g)=>s+num(g.imp),0)),tot=G.reduce((s,g)=>s+num(g.imp),0),conAdj=G.filter(g=>(g.adj||[]).length).length;
+  return pubIntro(b)+`<div class="card"><div class="card-h"><div><h2>Facturas del mes</h2><p class="lead">Cada gasto con su comprobante. Tocá "Ver" para abrir la foto o el PDF de la factura.</p></div><select id="smPick" style="max-width:240px">${S.map((p,i)=>`<option value="${i}" ${i===mi?'selected':''}>${perLabel(p.periodo)}${p.cur?' (en curso)':''}</option>`).join('')}</select></div>`+
+   (G.length?`<div class="tw"><table><thead><tr><th>Proveedor / concepto</th><th>Comprobante</th><th>Tipo</th><th class="n">Importe</th></tr></thead><tbody>${rs.map(([r,L])=>`<tr class="grp"><td colspan="3"><b>${esc(r)}</b></td><td class="n"><b>${fmt(L.reduce((s,g)=>s+num(g.imp),0))}</b></td></tr>`+L.map(g=>`<tr><td style="font-size:12.5px;padding-left:22px">${esc(g.prov)}${g.pend?' <span class="st bad">Falta explicar</span>':''}${g.reclas?' <span class="st warn">Reclasificado</span>':''}</td><td class="nw" style="font-size:12px">${esc(g.comp||'')} ${adjLinks(g)||'<span class="muted" style="font-size:11.5px">sin adjunto</span>'}</td><td class="nw"><span class="tag ${g.tipo==='B'?'b':''}">${g.tipo==='B'?'Extraordinario':'Ordinario'}</span></td><td class="n">${fmt(g.imp)}</td></tr>`).join('')).join('')}</tbody><tfoot><tr><td colspan="3">Total del mes</td><td class="n">${fmt(tot)}</td></tr></tfoot></table></div><p class="lead mt">${conAdj} de ${G.length} gastos tienen la factura adjunta.</p>`:
+   `<p class="muted">${M.rubros?'De ese mes solo se cargaron los totales por rubro, sin el detalle de cada factura.':'Ese mes no tiene gastos cargados.'}</p>`)+`</div>`;
+}
+function vPCuenta(b,C){
+  let i=window._uf;if(i==null){try{const v=localStorage.getItem('ec-pub-uf-'+b.id);if(v!=null)i=+v;}catch(e){}}i=Math.max(0,Math.min(i||0,b.ufs.length-1));
+  return pubIntro(b)+`<div class="row noprint" style="margin-bottom:14px"><label style="margin:0">Tu unidad</label><select id="ufPick" style="max-width:240px">${b.ufs.map((u,k)=>`<option value="${k}" ${k===i?'selected':''}>${esc(u.id)}</option>`).join('')}</select></div>`+reciboHTML(b,C,i)+`<p class="lead">Si pagaste y no figura, mandale el comprobante a la administración. Los pagos se registran al cerrar cada mes.</p>`;
+}
+function pubData(b){const x=JSON.parse(JSON.stringify(b));
+  // Lo que ven los propietarios: todos los números, sin nombres de propietarios ni notas internas de trabajo.
+  x.ufs.forEach(u=>{u.prop='';});delete x.pubKey;delete x.pagosFuera;delete x.presupuestos;delete x.preguntasExtra;x.cfg.obsPeriodo='';delete x.cfg.cobrosNoId;
+  (x.hist||[]).forEach(h=>{delete h.obsPeriodo;});return x;}
+const pubLink=b=>location.origin+location.pathname+'?ver='+encodeURIComponent(b.id)+'&k='+encodeURIComponent(b.pubKey)+'&api='+encodeURIComponent(D.api.url);
+async function bootPublic(){
+  document.body.classList.add('pub');VIEWS=PVIEWS;GLOBAL=[];
+  let th=null;try{th=localStorage.getItem('ec-pub-theme');}catch(e){}
+  D={v:1,barrios:[],activeId:null,view:PVIEWS.some(x=>x[0]===location.hash.slice(1))?location.hash.slice(1):'p_mes',theme:th||((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'),dona:false,api:{url:PUB.api,token:'',auto:false}};
+  render();
+  try{const r=await asJson(await fetch(PUB.api+(PUB.api.includes('?')?'&':'?')+'action=public&id='+encodeURIComponent(PUB.id)+'&key='+encodeURIComponent(PUB.k)));
+    if(!r.ok)throw new Error(r.error||'');const b=r.barrio;b.id=b.id||PUB.id;b.obs=b.obs||{};b.hist=b.hist||[];b.gastos=b.gastos||[];b.ufs=b.ufs||[];PUB.at=r.publicado;D.barrios=[b];D.activeId=b.id;document.title=b.nombre+' · Expensas';render();}
+  catch(e){PUB.msg=`<div class="card"><h2>No se pudo abrir la página</h2><p>${esc(/NO_JSON|fetch/i.test(e.message)?'No se pudo conectar con la planilla del barrio. Probá de nuevo en un rato.':e.message)}</p></div>`;render();}
 }
 /* ---------- Extraordinarias ---------- */
 const isCam=t=>/c[aá]mara|cctv|monitoreo|fibra|seguridad electr|obra civil|columna/i.test(t||'')&&!/cubierta/i.test(t||'');
@@ -682,9 +740,9 @@ function vGastos(b,C){
   const f=(window._gf||'').toLowerCase();
   const list=b.gastos.map((g,i)=>[g,i]).filter(([g])=>!f||(g.prov+' '+g.rubro+' '+g.comp).toLowerCase().includes(f));
   return help('gastos')+`<div class="card"><div class="card-h"><div><h2>Gastos del mes (devengados)</h2><p class="lead">Tipo A = ordinario · Tipo B = extraordinario · Negativo = crédito a favor del barrio.</p></div><input id="gFilter" class="noprint" placeholder="Buscar proveedor, rubro o comprobante" value="${esc(window._gf||'')}" style="max-width:280px"><button class="btn noprint" id="addG">${ic('plus')}Agregar gasto</button></div>
-  <div class="tw"><table><thead><tr><th style="width:130px">Fecha</th><th style="width:220px">Rubro</th><th>Proveedor / concepto</th><th style="width:170px">Comprobante</th><th style="width:70px">Tipo</th><th class="n" style="width:150px">Importe</th><th style="width:92px;text-align:center">Falta explicar</th><th class="noprint"></th></tr></thead><tbody>`+
-  list.map(([g,i])=>`<tr><td><input type="date" data-g="${i}" data-f="fecha" value="${esc(g.fecha)}"></td><td><select data-g="${i}" data-f="rubro">${rubroList(b).map(r=>`<option ${r===g.rubro?'selected':''}>${esc(r)}</option>`).join('')}<option value="__new">+ Nuevo rubro…</option></select></td><td><input data-g="${i}" data-f="prov" value="${esc(g.prov)}"></td><td><input data-g="${i}" data-f="comp" value="${esc(g.comp)}"></td><td><select data-g="${i}" data-f="tipo"><option ${g.tipo!=='B'?'selected':''}>A</option><option ${g.tipo==='B'?'selected':''}>B</option></select></td><td>${mIn(`data-g="${i}" data-f="imp"`,g.imp)}</td><td style="text-align:center"><input type="checkbox" data-g="${i}" data-f="pend" ${g.pend?'checked':''} style="width:auto" title="Marcar si este gasto no tiene explicación o respaldo"></td><td class="noprint"><button class="x" data-delg="${i}" title="Quitar">×</button></td></tr>`).join('')+
-  `</tbody><tfoot><tr><td colspan="5">Ordinarios (A)</td><td class="n">${money(C.A)}</td><td></td><td class="noprint"></td></tr><tr><td colspan="5">Extraordinarios (B)</td><td class="n">${money(C.B)}</td><td></td><td class="noprint"></td></tr><tr><td colspan="5">Total del mes</td><td class="n">${money(C.A+C.B)}</td><td></td><td class="noprint"></td></tr></tfoot></table></div></div>`;
+  <div class="tw"><table><thead><tr><th style="width:130px">Fecha</th><th style="width:220px">Rubro</th><th>Proveedor / concepto</th><th style="width:170px">Comprobante</th><th style="width:70px">Tipo</th><th class="n" style="width:150px">Importe</th><th style="width:92px;text-align:center">Falta explicar</th><th style="width:120px">Comprobante adjunto</th><th class="noprint"></th></tr></thead><tbody>`+
+  list.map(([g,i])=>`<tr><td><input type="date" data-g="${i}" data-f="fecha" value="${esc(g.fecha)}"></td><td><select data-g="${i}" data-f="rubro">${rubroList(b).map(r=>`<option ${r===g.rubro?'selected':''}>${esc(r)}</option>`).join('')}<option value="__new">+ Nuevo rubro…</option></select></td><td><input data-g="${i}" data-f="prov" value="${esc(g.prov)}"></td><td><input data-g="${i}" data-f="comp" value="${esc(g.comp)}"></td><td><select data-g="${i}" data-f="tipo"><option ${g.tipo!=='B'?'selected':''}>A</option><option ${g.tipo==='B'?'selected':''}>B</option></select></td><td>${mIn(`data-g="${i}" data-f="imp"`,g.imp)}</td><td style="text-align:center"><input type="checkbox" data-g="${i}" data-f="pend" ${g.pend?'checked':''} style="width:auto" title="Marcar si este gasto no tiene explicación o respaldo"></td><td class="nw">${(g.adj||[]).map((a,k)=>okUrl(a.u)?`<a class="adj" href="${esc(a.u)}" target="_blank" rel="noopener" title="${esc(a.n||'Comprobante')}">${ic('clip')}${g.adj.length>1?k+1:'Ver'}</a><button class="x noprint" data-deladj="${i}|${k}" title="Quitar este comprobante" style="font-size:13px;padding:0 3px">×</button>`:'').join('')}<button class="attbtn noprint" data-att="${i}" title="Subir la foto o el PDF de la factura">${g.adj&&g.adj.length?'+':'Adjuntar'}</button></td><td class="noprint"><button class="x" data-delg="${i}" title="Quitar">×</button></td></tr>`).join('')+
+  `</tbody><tfoot><tr><td colspan="5">Ordinarios (A)</td><td class="n">${money(C.A)}</td><td colspan="2"></td><td class="noprint"></td></tr><tr><td colspan="5">Extraordinarios (B)</td><td class="n">${money(C.B)}</td><td colspan="2"></td><td class="noprint"></td></tr><tr><td colspan="5">Total del mes</td><td class="n">${money(C.A+C.B)}</td><td colspan="2" class="muted" style="font-weight:400;font-size:12px">${b.gastos.filter(g=>(g.adj||[]).length).length} de ${b.gastos.length} con comprobante adjunto</td><td class="noprint"></td></tr></tfoot></table></div>${D.api.url?'':'<p class="lead mt">Para adjuntar fotos o PDF de las facturas, conectá la app con la planilla en Configuración: los archivos se guardan en tu Google Drive.</p>'}</div>`;
 }
 function tablaRubros(b,C,editable){
   const pr=C.prev&&C.prev.rubros?C.prev.rubros:null,tg=C.A+C.B,P=b.cfg.periodo;
@@ -707,6 +765,11 @@ function tablaProrrateo(b,C){
 function vLiquidacion(b,C,print){
   return help('rubros')+(print?'':kpis(b,C))+`<div class="card"><div class="card-h"><div><h2>Gastos por rubro y variación</h2><p class="lead">Escribí en cada rubro por qué subió o bajó. Si lo dejás vacío, en gris se ve una sugerencia.</p></div>${print?'':'<button class="btn ghost noprint" id="fillSug">Completar con sugerencias</button>'}</div>${tablaRubros(b,C,!print)}</div>`+
   help('prorrateo')+`<div class="card"><div class="card-h"><div><h2>Prorrateo por unidad ${qi('prorrateo')}</h2><p class="lead">Cuánto paga cada unidad y de dónde sale.</p></div>${print?'':'<button class="btn ghost noprint" id="csv">Copiar para Sheets</button><button class="btn noprint" id="closeP">Cerrar período</button>'}</div>${tablaProrrateo(b,C)}</div>`;
+}
+function flujoTabla(b,C){
+  const c=b.cfg,fl=[['Saldo inicial',C.cajaO,C.cajaE],['+ Cobranza del mes',C.cobrO,C.cobrE],[(has(c.egrOrd)||has(c.egrExt))?'− Pagos realizados (según banco)':'− Pagos (supuesto: igual a lo devengado)',-C.egrO,-C.egrE],['= Saldo al cierre',C.finO,C.finE]];
+  return `<div class="tw"><table><thead><tr><th>Concepto</th><th class="n">Ordinario</th><th class="n">Extraordinario</th><th class="n">Total</th></tr></thead><tbody>`+fl.map(([t,o,e])=>`<tr${t.startsWith('=')?' style="font-weight:700"':''}><td>${t}</td><td class="n">${fmt(o)}</td><td class="n">${fmt(e)}</td><td class="n">${fmt(o+e)}</td></tr>`).join('')+
+  (has(c.saldoBanco)?`<tr><td>Saldo según extracto bancario</td><td></td><td></td><td class="n">${fmt(+c.saldoBanco)}</td></tr><tr><td>Diferencia de conciliación</td><td></td><td></td><td class="n">${fmt(C.finO+C.finE-c.saldoBanco)}</td></tr>`:'')+`</tbody></table></div>${C.fondoFin>1?`<p class="lead mt">Fondo de reserva acumulado: ${money(C.fondoFin)} (forma parte del fondo ordinario).</p>`:''}`;
 }
 function vCaja(b,C){
   const c=b.cfg,fl=[['Saldo inicial',C.cajaO,C.cajaE],['+ Cobranza del mes',C.cobrO,C.cobrE],[(has(c.egrOrd)||has(c.egrExt))?'− Pagos realizados (según banco)':'− Pagos (supuesto: igual a lo devengado)',-C.egrO,-C.egrE],['= Saldo al cierre',C.finO,C.finE]];
@@ -747,12 +810,14 @@ function vAjustes(b){
    <div><label>Nombre</label><input data-b="nombre" value="${esc(b.nombre)}"></div><div><label>Zona</label><input data-b="zona" value="${esc(b.zona||'')}"></div><div><label>Administración</label><input data-b="admin" value="${esc(b.admin||'')}"></div>${f('cuit','CUIT del consorcio','text')}</div></div>
   <div class="card"><h2>Período</h2><div class="grid mt">${f('periodo','Período','month')}${f('venc','Vencimiento','date')}${f('fondo','Fondo de reserva (% de ordinarias)')}${f('interes','Interés por mora (% mensual)')}</div></div>
   <div class="card"><h2>Caja y banco ${qi('caja')}</h2><div class="grid mt">${f('cajaOrd','Saldo inicial fondo ordinario')}${f('cajaExt','Saldo inicial fondo extraordinario')}${f('fondoacum','Fondo de reserva acumulado al inicio')}${f('cobrExt','Cobranza imputada a extraordinarias','number','vacío = 0')}${f('egrOrd','Pagos realizados — ordinarios','number','vacío = igual a lo devengado')}${f('egrExt','Pagos realizados — extraordinarios','number','vacío = igual a lo devengado')}${f('saldoBanco','Saldo del extracto bancario al cierre','number','para conciliar')}</div></div>
+  <div class="card"><h2>Página para propietarios</h2><p class="lead">Un link de solo lectura para mandar al grupo del barrio: el mes en pocas palabras, gastos por rubro con tus observaciones, cada factura con su comprobante, el estado de cuenta de cada unidad, la caja, los controles y la evolución de todos los meses. No muestra los nombres de los propietarios ni tus notas internas del período. Los propietarios ven lo último que publicaste: cuando el mes esté listo, tocá "Publicar".</p>
+   ${!D.api.url?'<p class="muted">Primero conectá la app con la planilla en Configuración: la página se publica desde ahí.</p>':`<div class="row"><button class="btn" id="pubDo">${b.pubKey?'Actualizar lo publicado':'Publicar'}</button>${b.pubKey?`<button class="btn ghost" id="pubCopy">${ic('link')}Copiar link</button><a class="btn ghost" id="pubOpen" href="${esc(pubLink(b))}" target="_blank" rel="noopener">Ver como propietario</a><button class="btn ghost" id="pubNew" title="El link anterior deja de funcionar">Cambiar el link</button><button class="btn danger" id="pubOff">Dejar de publicar</button>`:''}</div>${b.pubKey?`<p class="lead mt">${b.pubAt?'Última publicación: '+new Date(b.pubAt).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'})+(b.updated&&b.updated>b.pubAt?' · <b>hay cambios sin publicar</b>':' · al día'):'Publicado.'}</p><input readonly value="${esc(pubLink(b))}" style="font-size:12px" onclick="this.select()">`:''}`}</div>
   <div class="card"><h2>Rubros propios</h2><p class="lead">Rubros que agregaste para este barrio, además de los estándar. Se crean desde Gastos con "+ Nuevo rubro…".</p>${(b.rubros||[]).length?`<div class="row">${b.rubros.map((r,k)=>`<span class="chip">${esc(r)} <button class="x" data-delr="${k}" title="Quitar" style="font-size:14px;padding:0 2px">×</button></span>`).join('')}</div>`:'<p class="muted">Todavía no agregaste rubros propios.</p>'}<div class="row mt"><button class="btn ghost" id="addR">+ Nuevo rubro</button></div></div>
   <div class="card"><h2>Datos</h2><p class="lead">Respaldo manual del barrio en formato JSON.</p><div class="row"><button class="btn ghost" id="expB">Copiar datos del barrio</button><button class="btn ghost" id="impB">Importar datos</button><button class="btn ghost" id="dupB">Duplicar barrio</button><button class="btn danger" id="delB">Eliminar barrio</button></div><textarea id="ioB" rows="6" style="display:none;margin-top:10px;font-family:ui-monospace,monospace;font-size:12px" placeholder="Pegá acá el JSON y tocá Importar otra vez"></textarea></div>`;
 }
 function vConexion(){
   const a=D.api;
-  return `<div class="card"><h2>Preferencias</h2><div class="row mt"><label style="display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:var(--ink)"><input type="checkbox" id="prefCents" ${D.cents?'checked':''} style="width:auto"> Mostrar centavos en todos los montos</label></div><p class="lead mt">Los montos siempre se muestran con separador de miles (1.234.567). Los campos de carga aceptan "1234567,89" o "1.234.567,89".</p></div>`+help('conexion')+`<div class="card"><h2>Conexión con Google Sheets</h2><p class="lead">Pegá la URL del Apps Script publicado como aplicación web y la clave que definiste en el script. Funciona con la app publicada en GitHub Pages (la vista previa de Claude no permite conexiones externas).</p>
+  return (syncState==='bad'&&lastErr?`<div class="card" style="border-color:var(--bad);background:var(--badSoft)"><h2>Sin conexión con la planilla</h2><p style="margin:0;font-size:13.5px">${esc(lastErr)}</p><p class="lead mt">Los cambios quedan guardados en este navegador y se suben solos cuando vuelva la conexión.</p></div>`:'')+`<div class="card"><h2>Preferencias</h2><div class="row mt"><label style="display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:var(--ink)"><input type="checkbox" id="prefCents" ${D.cents?'checked':''} style="width:auto"> Mostrar centavos en todos los montos</label></div><p class="lead mt">Los montos siempre se muestran con separador de miles (1.234.567). Los campos de carga aceptan "1234567,89" o "1.234.567,89".</p></div>`+help('conexion')+`<div class="card"><h2>Conexión con Google Sheets</h2><p class="lead">Pegá la URL del Apps Script publicado como aplicación web y la clave que definiste en el script. Funciona con la app publicada en GitHub Pages (la vista previa de Claude no permite conexiones externas).</p>
   <div class="grid mt"><div style="grid-column:span 2"><label>URL de la aplicación web (termina en /exec)</label><input id="apiUrl" value="${esc(a.url)}" placeholder="https://script.google.com/macros/s/…/exec"></div><div><label>Clave (TOKEN)</label><input id="apiTok" type="password" value="${esc(a.token)}"></div></div>
   <div class="row mt"><label style="display:flex;gap:8px;align-items:center;margin:0"><input type="checkbox" id="apiAuto" ${a.auto?'checked':''} style="width:auto"> Guardar automáticamente en la planilla con cada cambio</label></div>
   <div class="row mt"><button class="btn" id="apiTest">Probar conexión</button><button class="btn ghost" id="apiPull">Traer todo desde la planilla</button><button class="btn ghost" id="apiPush">Subir todo a la planilla</button></div><p class="lead mt" id="apiMsg"></p></div>
@@ -777,10 +842,20 @@ function after(v){
   on('pdfExtra',()=>{$('phSec').textContent='Informe de extraordinarias';printNow();});
   on('copyPreg',()=>copy([...document.querySelectorAll('#view ol li')].map((li,i)=>(i+1)+'. '+li.textContent).join('\n'),'Preguntas copiadas'));
   const sp=$('smPick');if(sp)sp.onchange=()=>{window._sm=+sp.value;render();};
-  const up=$('ufPick');if(up)up.onchange=()=>{window._uf=+up.value;render();};
+  const up=$('ufPick');if(up)up.onchange=()=>{window._uf=+up.value;if(PUB)try{localStorage.setItem('ec-pub-uf-'+b.id,up.value);}catch(e){}render();};
   const gf=$('gFilter');if(gf)gf.oninput=()=>{window._gf=gf.value;soft();};
   const op=$('obsPeriodo');if(op)op.oninput=()=>{b.cfg.obsPeriodo=op.value;touch();};
   on('addR',()=>nuevoRubro(null));
+  const newKey=()=>Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
+  const doPub=async(msgOk)=>{const e=$('pubDo');if(e){e.disabled=true;e.textContent='Publicando…';}
+    try{if(!b.pubKey){b.pubKey=newKey();}const r=await apiPost({action:'publish',id:b.id,key:b.pubKey,data:pubData(b)});if(!r.ok)throw new Error(r.error);
+      b.pubAt=r.publicado||new Date().toISOString();b.updated=b.pubAt;persist();queueSync(b);render();toast(msgOk||'Publicado: los propietarios ya ven esta versión');}
+    catch(err){toast('No se pudo publicar: '+(/Acción desconocida|NO_JSON/.test(err.message)?'actualizá el Code.gs de la planilla y ejecutá setup':explain(err)));render();}};
+  on('pubDo',()=>doPub());
+  on('pubCopy',()=>copy(pubLink(b),'Link copiado: pegalo en el grupo del barrio'));
+  on('pubNew',()=>{const e=$('pubNew');if(!e.dataset.arm){e.dataset.arm=1;e.textContent='Confirmar: el link viejo deja de andar';setTimeout(()=>{if(e.isConnected){delete e.dataset.arm;e.textContent='Cambiar el link';}},4000);return;}b.pubKey=newKey();doPub('Link nuevo publicado: el anterior ya no funciona');});
+  on('pubOff',async()=>{const e=$('pubOff');if(!e.dataset.arm){e.dataset.arm=1;e.textContent='Confirmar: dejar de publicar';setTimeout(()=>{if(e.isConnected){delete e.dataset.arm;e.textContent='Dejar de publicar';}},4000);return;}
+    try{const r=await apiPost({action:'unpublish',id:b.id});if(!r.ok)throw new Error(r.error);b.pubKey='';b.pubAt='';touch();render();toast('La página dejó de estar publicada');}catch(err){toast('No se pudo: '+explain(err));}});
   document.querySelectorAll('[data-delr]').forEach(x=>x.onclick=()=>{const k=+x.dataset.delr,r=b.rubros[k];if(b.gastos.some(g=>g.rubro===r)){toast('Hay gastos con ese rubro: cambialos antes de quitarlo');return;}b.rubros.splice(k,1);touch();render();});
   on('expB',()=>copy(JSON.stringify(b,null,1),'Datos del barrio copiados'));
   on('impB',()=>{const t=$('ioB');if(t.style.display==='none'){t.style.display='block';t.focus();return;}try{const d=JSON.parse(t.value);if(!d.cfg||!Array.isArray(d.ufs))throw 0;d.id=b.id;Object.assign(b,d);touch();render();toast('Barrio importado');}catch(e){toast('El texto no es un barrio válido');}});
@@ -795,9 +870,9 @@ function bindConexion(){
   $('apiUrl').oninput=e=>{D.api.url=e.target.value.trim();persist();syncChip();};
   $('apiTok').oninput=e=>{D.api.token=e.target.value;persist();};
   $('apiAuto').onchange=e=>{D.api.auto=e.target.checked;persist();};
-  $('apiTest').onclick=async()=>{msg('Probando…');try{const r=await apiGet('ping');msg(r.ok?`Conectado. La planilla tiene ${r.barrios} barrio(s).`:'Respuesta inesperada: '+(r.error||''));setSync(r.ok?'ok':'bad');}catch(e){msg(errMsg(e));setSync('bad');}};
-  $('apiPull').onclick=async()=>{msg('Trayendo datos…');try{const r=await apiGet('load');if(!r.ok)throw new Error(r.error);if(!r.barrios.length){msg('La planilla está vacía. Usá "Subir todo".');return;}const n=mergeRemote(r.barrios,true);msg(`Listo: ${r.barrios.length} barrio(s) en la planilla; ${n} actualizado(s) en este navegador.`);setSync('ok');shell();}catch(e){msg(errMsg(e));setSync('bad');}};
-  $('apiPush').onclick=async()=>{msg('Subiendo…');try{for(const b of D.barrios){const r=await apiPost({action:'saveBarrio',barrio:b});if(!r.ok)throw new Error(r.error);}msg(`Listo: ${D.barrios.length} barrio(s) guardados en la planilla.`);setSync('ok');}catch(e){msg(errMsg(e));setSync('bad');}};
+  $('apiTest').onclick=async()=>{msg('Probando…');try{const r=await apiGet('ping');msg(r.ok?`Conectado. La planilla tiene ${r.barrios} barrio(s).${(r.version||0)<3?' Ojo: el script de la planilla es una versión vieja; pegá el Code.gs nuevo para guardar comprobantes y publicar la página para propietarios.':''}`:explain(r));setSync(r.ok?'ok':'bad',r);render();}catch(e){msg(errMsg(e));setSync('bad',e);render();}};
+  $('apiPull').onclick=async()=>{msg('Trayendo datos…');try{const r=await apiGet('load');if(!r.ok)throw new Error(r.error);if(!r.barrios.length){msg('La planilla está vacía. Usá "Subir todo".');return;}const n=mergeRemote(r.barrios,true);setSync('ok');msg(`Listo: ${r.barrios.length} barrio(s) en la planilla; ${n} actualizado(s) en este navegador.`);setSync('ok');shell();}catch(e){msg(errMsg(e));setSync('bad',e);}};
+  $('apiPush').onclick=async()=>{msg('Subiendo…');try{for(const b of D.barrios){const r=await apiPost({action:'saveBarrio',barrio:b});if(!r.ok)throw new Error(r.error);}msg(`Listo: ${D.barrios.length} barrio(s) guardados en la planilla.`);setSync('ok');}catch(e){msg(errMsg(e));setSync('bad',e);}};
   $('expAll').onclick=()=>copy(JSON.stringify({v:1,barrios:D.barrios},null,1),'Respaldo copiado');
   $('impAll').onclick=()=>{const t=$('ioAll');if(t.style.display==='none'){t.style.display='block';t.focus();return;}try{const d=JSON.parse(t.value);if(!Array.isArray(d.barrios))throw 0;d.barrios.forEach(nb=>{const i=D.barrios.findIndex(x=>x.id===nb.id);if(i>=0)D.barrios[i]=nb;else D.barrios.push(nb);});D.activeId=d.barrios[0]?.id||D.activeId;persist();if(D.api.url&&D.api.auto)d.barrios.forEach(x=>apiPost({action:'saveBarrio',barrio:x}).then(r=>setSync(r.ok?'ok':'bad')).catch(()=>setSync('bad')));render();toast(d.barrios.length+' barrio(s) importados');}catch(e){toast('El texto no es un respaldo válido');}};
   $('resetAll').onclick=e=>{const x=e.target;if(!x.dataset.arm){x.dataset.arm=1;x.textContent='Confirmar: se borran los datos de este navegador';setTimeout(()=>{if(x.isConnected){delete x.dataset.arm;x.textContent='Volver a los datos de ejemplo';}},4000);return;}const api=D.api;D=initial();D.api=api;D.view='inicio';persist();render();toast('Datos de ejemplo cargados');};
@@ -827,7 +902,26 @@ document.addEventListener('scroll',()=>{$('pop').style.display='none';},true);
 document.addEventListener('click',e=>{const tr=e.target.closest('tr.rub');if(!tr)return;const o=window._rubOpen=window._rubOpen||new Set(),r=tr.dataset.rn,op=!o.has(r);op?o.add(r):o.delete(r);tr.classList.toggle('open',op);document.querySelectorAll(`tr.rsub[data-rp="${tr.dataset.ri}"]`).forEach(x=>x.hidden=!op);});
 document.addEventListener('click',e=>{const ev=e.target.closest('[data-ev]');if(ev){window._evMode=ev.dataset.ev;render();return;}});
 document.addEventListener('click',e=>{const nv=e.target.closest('[data-v]');if(nv){e.preventDefault();go(nv.dataset.v);return;}});
+let attIdx=null;
+document.addEventListener('click',e=>{const a=e.target.closest('[data-att]');if(!a||PUB)return;
+  if(!D.api.url){toast('Conectá la planilla en Configuración para guardar comprobantes en Google Drive');return;}attIdx=+a.dataset.att;$('fileIn').value='';$('fileIn').click();});
+$('fileIn').onchange=async e=>{const f=e.target.files[0],b=B();if(!f||!b||attIdx==null||!b.gastos[attIdx])return;const g=b.gastos[attIdx];
+  if(!/^image\/|^application\/pdf$/.test(f.type)){toast('Solo fotos o PDF');return;}
+  const btn=document.querySelector(`[data-att="${attIdx}"]`);if(btn){btn.disabled=true;btn.textContent='Subiendo…';}
+  try{const {data,mime,name}=await prepFile(f);if(data.length>34e6)throw new Error('El archivo es muy grande (máximo unos 25 MB)');
+    const nm=[b.cfg.periodo,g.rubro,(g.prov||'').slice(0,40),name].filter(Boolean).join(' - ').replace(/[\\/:*?"<>|]/g,' ');
+    const r=await apiPost({action:'upload',name:nm,mime,data});if(!r.ok)throw new Error(r.error);
+    (g.adj=g.adj||[]).push({id:r.id,u:r.url,n:name});touch();render();toast(r.compartido===false?'Comprobante guardado, pero Google no permitió compartirlo con link: abrilo en Drive y compartilo como "Cualquier persona con el enlace"':'Comprobante adjuntado');}
+  catch(err){toast('No se pudo subir: '+(/NO_JSON|Acción desconocida/.test(err.message)?'actualizá el Code.gs de la planilla (versión con comprobantes) y ejecutá setup':explain(err)));render();}};
+// Las fotos se achican antes de subir (una foto de celular pesa 5 MB; con 2000 px se lee igual y pesa 10 veces menos).
+async function prepFile(f){const name=f.name||'comprobante';
+  if(/^image\/(jpeg|png|webp|heic|heif)$/.test(f.type)){try{const img=await createImageBitmap(f),k=Math.min(1,2000/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    const u=cv.toDataURL('image/jpeg',0.82);return {data:u.split(',')[1],mime:'image/jpeg',name:name.replace(/\.\w+$/,'')+'.jpg'};}catch(e){}}
+  const u=await new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=ko;r.readAsDataURL(f);});return {data:String(u).split(',')[1],mime:f.type,name};}
 document.addEventListener('click',e=>{const t=e.target,b=B();if(!b)return;
+  const da=t.closest('[data-deladj]');if(da){const [gi,k]=da.dataset.deladj.split('|').map(Number),g=b.gastos[gi],a=g&&(g.adj||[])[k];if(!a)return;
+    if(!da.dataset.arm){da.dataset.arm=1;da.textContent='¿Quitar?';setTimeout(()=>{if(da.isConnected){delete da.dataset.arm;da.textContent='×';}},3500);return;}
+    g.adj.splice(k,1);touch();render();if(a.id&&D.api.url)apiPost({action:'deleteFile',fileId:a.id}).catch(()=>{});toast('Comprobante quitado (queda en la papelera de Drive)');return;}
   if(t.dataset.delu!==undefined){b.ufs.splice(+t.dataset.delu,1);touch();render();}
   if(t.dataset.delg!==undefined){b.gastos.splice(+t.dataset.delg,1);touch();render();}});
 let tmr;function soft(){clearTimeout(tmr);tmr=setTimeout(()=>{const a=document.activeElement,ds=a&&a.dataset?{...a.dataset}:{},id=a&&a.id,ss=a&&a.selectionStart,raw=a&&a.value;
@@ -861,7 +955,7 @@ function closePeriod(){
     c.cajaOrd=Math.round(C.finO*100)/100;c.cajaExt=Math.round(C.finE*100)/100;c.fondoacum=Math.round(C.fondoFin);
     Object.assign(c,{cobrExt:'',egrOrd:'',egrExt:'',saldoBanco:'',obsPeriodo:'',cobrosNoId:null});
     const [y,m]=(c.periodo||'2026-01').split('-').map(Number),nx=new Date(y,m,1);c.periodo=nx.getFullYear()+'-'+String(nx.getMonth()+1).padStart(2,'0');c.venc=c.periodo+'-10';
-    b.gastos=[];touch();closeModal();go('historial');toast('Período cerrado');};
+    b.gastos=[];touch();closeModal();go('historial');toast(b.pubKey?'Período cerrado. Acordate de actualizar la página para propietarios en Ajustes':'Período cerrado');};
 }
 function reciboTxt(b,i){const C=calc(b),r=C.rows[i],c=b.cfg;
   return `${b.nombre} — ${r.u.id}${r.u.prop?' ('+r.u.prop+')':''}\n${perLabel(c.periodo)} · Vence ${c.venc}\n\nSaldo anterior: ${money(r.u.saldo)}\nPagos registrados: -${money(r.u.pagos)}\nInterés por mora: ${money(r.int)}\nExpensas ordinarias: ${money(r.ord)}\n${r.fr?'Fondo de reserva: '+money(r.fr)+'\n':''}Expensas extraordinarias: ${money(r.ex)}\n${r.part?'Gastos particulares: '+money(r.part)+'\n':''}TOTAL A PAGAR: ${money(r.total)}`;}
@@ -880,18 +974,26 @@ function pdfMenu(){const b=B(),isB=b&&!GLOBAL.some(x=>x[0]===D.view);
 
 /* ---------- Google Sheets (Apps Script) ---------- */
 let syncState='local',syncT;
-function setSync(s){syncState=s;syncChip();}
+let lastErr='';
+function setSync(s,why){syncState=s;if(s==='ok')lastErr='';else if(s==='bad')lastErr=why?explain(why):(lastErr||'La planilla no respondió.');syncChip();}
+// Traduce la respuesta o el error de la planilla a algo que se pueda resolver.
+function explain(x){const t=typeof x==='string'?x:(x&&(x.error||x.message))||String(x||'');
+  if(/Clave incorrecta/i.test(t))return 'La planilla rechazó la clave. Si pegaste un Code.gs nuevo en Apps Script, se borró tu clave: escribila otra vez en la línea TOKEN_EN_CODIGO (la misma que está acá en Configuración), ejecutá setup y publicá una nueva versión (Implementar > Gestionar implementaciones > Editar > Nueva versión).';
+  if(/NO_JSON/.test(t))return 'La planilla respondió con una página de error en vez de datos. Suele pasar cuando el script tiene un error o falta autorizarlo: en Apps Script ejecutá setup, aceptá los permisos y publicá una nueva versión.';
+  if(/Failed to fetch|NetworkError|Load failed/i.test(t))return 'No se pudo llegar a la planilla. Revisá que la URL termine en /exec, que la implementación sea para "Cualquier usuario" y que tengas internet. Desde la vista previa de Claude no funciona: usá la app publicada en GitHub Pages.';
+  return 'Error de la planilla: '+t;}
 function syncChip(){const ch=$('syncChip'),t=$('syncTxt');ch.className='chip'+(syncState==='ok'?' ok':syncState==='bad'?' bad':'');
   t.textContent=!D.api.url?'Solo en este navegador':syncState==='ok'?'Guardado en Google Sheets':syncState==='bad'?'Sin conexión con la planilla':syncState==='saving'?'Guardando…':'Google Sheets';}
-const errMsg=e=>'No se pudo conectar ('+(e&&e.message||e)+'). Revisá la URL y la clave. Desde la vista previa de Claude no funciona: usá la app publicada en GitHub Pages.';
-async function apiGet(action){const u=D.api.url+(D.api.url.includes('?')?'&':'?')+'action='+action+'&token='+encodeURIComponent(D.api.token);const r=await fetch(u);return r.json();}
-async function apiPost(body){const r=await fetch(D.api.url,{method:'POST',body:JSON.stringify({...body,token:D.api.token})});return r.json();}
+const errMsg=e=>explain(e);
+async function asJson(r){const t=await r.text();try{return JSON.parse(t);}catch(e){throw new Error('NO_JSON');}}
+async function apiGet(action,extra){const u=D.api.url+(D.api.url.includes('?')?'&':'?')+'action='+action+'&token='+encodeURIComponent(D.api.token||'')+(extra||'');return asJson(await fetch(u));}
+async function apiPost(body){return asJson(await fetch(D.api.url,{method:'POST',body:JSON.stringify({...body,token:D.api.token})}));}
 const syncQ=new Set();
 function queueSync(b){if(!D.api.url||!D.api.auto)return;const target=b||B();if(!target)return;syncQ.add(target.id);clearTimeout(syncT);setSync('saving');
   // se guardan todos los barrios con cambios pendientes, no solo el último que se tocó
-  syncT=setTimeout(async()=>{const ids=[...syncQ];syncQ.clear();let ok=true;for(const id of ids){const x=D.barrios.find(y=>y.id===id);if(!x)continue;try{const r=await apiPost({action:'saveBarrio',barrio:x});if(!r.ok){ok=false;syncQ.add(id);}}catch(e){ok=false;syncQ.add(id);}}setSync(ok?'ok':'bad');},1800);}
+  syncT=setTimeout(async()=>{const ids=[...syncQ];syncQ.clear();let ok=true;for(const id of ids){const x=D.barrios.find(y=>y.id===id);if(!x)continue;try{const r=await apiPost({action:'saveBarrio',barrio:x});if(!r.ok){ok=false;syncQ.add(id);lastErr=explain(r);}}catch(e){ok=false;syncQ.add(id);lastErr=explain(e);}}setSync(ok?'ok':'bad');},1800);}
 function mergeRemote(list,force){let n=0;list.forEach(rb=>{const i=D.barrios.findIndex(x=>x.id===rb.id);if(i<0){D.barrios.push(rb);n++;}else if(force||(rb.updated&&(!D.barrios[i].updated||rb.updated>D.barrios[i].updated))){D.barrios[i]=rb;n++;}});if(!B()&&D.barrios[0])D.activeId=D.barrios[0].id;persist();return n;}
-async function autoLoad(){if(!D.api.url)return;try{const r=await apiGet('load');if(r.ok){const n=mergeRemote(r.barrios,false);setSync('ok');if(n){render();toast(n+' barrio(s) actualizados desde Google Sheets');}}else setSync('bad');}catch(e){setSync('bad');}}
+async function autoLoad(){if(!D.api.url)return;try{const r=await apiGet('load');if(!r.ok){setSync('bad',r);return;}if(r.ok){const n=mergeRemote(r.barrios,false);setSync('ok');if(n){render();toast(n+' barrio(s) actualizados desde Google Sheets');}}}catch(e){setSync('bad',e);}}
 async function apiDelete(id){if(!D.api.url)return;try{await apiPost({action:'deleteBarrio',id});}catch(e){}}
 
 /* ---------- Utilidades ---------- */
@@ -903,14 +1005,16 @@ function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clear
 async function copy(t,msg){try{await navigator.clipboard.writeText(t);toast(msg||'Copiado');}catch(e){modal(`<h3>Copiá el texto</h3><textarea rows="12" style="font-family:ui-monospace,monospace;font-size:12px">${esc(t)}</textarea><div class="row mt" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">Listo</button></div>`);}}
 
 /* ---------- Arranque ---------- */
-$('btnTheme').onclick=()=>{D.theme=D.theme==='dark'?'light':'dark';persist();shell();};
+$('btnTheme').onclick=()=>{D.theme=D.theme==='dark'?'light':'dark';if(PUB)try{localStorage.setItem('ec-pub-theme',D.theme);}catch(e){}persist();shell();};
 $('btnDona').onclick=()=>{D.dona=!D.dona;persist();shell();toast(D.dona?'Modo Doña Rosa: cada sección explica sus conceptos en lenguaje simple':'Modo Doña Rosa desactivado');};
 $('btnPdf').onclick=pdfMenu;
+$('syncChip').onclick=()=>{if(!PUB)go('conexion');};
 $('barrioPick').onchange=e=>{if(e.target.value==='__new'){shell();newBarrio();return;}D.activeId=e.target.value;persist();go(GLOBAL.some(x=>x[0]===D.view)?'resumen':D.view);};
 $('mobNav').onchange=e=>go(e.target.value);
 window.addEventListener('hashchange',()=>{const k=location.hash.slice(1);if([...VIEWS,...GLOBAL].some(x=>x[0]===k)&&k!==D.view)go(k);});
-load();const h0=location.hash.slice(1);if([...VIEWS,...GLOBAL].some(x=>x[0]===h0))D.view=h0;render();
-if(D.api.url){setSync('idle');autoLoad();}
+if(PUB)bootPublic();
+else{load();const h0=location.hash.slice(1);if([...VIEWS,...GLOBAL].some(x=>x[0]===h0))D.view=h0;render();
+if(D.api.url){setSync('idle');autoLoad();}}
 </script>
 </body>
 </html>
